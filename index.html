@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Recipe Book</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3F4B3B">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        granite: '#3F4B3B',
+                        sand: '#A49966',
+                        drysage: '#C7C7A6',
+                        frostedmint: '#EAFFDA',
+                        darkraspberry: '#861657',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Bree Serif', serif; }
+        .font-pacifico { font-family: 'Pacifico', cursive; }
+        .modal.hidden, .page.hidden { display: none; }
+    </style>
+</head>
+<body class="bg-granite text-frostedmint">
+
+    <div class="container mx-auto max-w-6xl px-4 py-12">
+        <header class="mb-12 text-center">
+            <h1 class="text-8xl text-frostedmint font-pacifico tracking-normal">My Recipes</h1>
+        </header>
+
+        <!-- NAVIGATION -->
+        <nav class="flex justify-center mb-8 bg-granite border border-sand p-2 rounded-lg border border-sand">
+            <button id="nav-recipes" class="nav-btn bg-sand text-frostedmint px-6 py-2 rounded-md font-semibold font-serif">All Recipes</button>
+            <button id="nav-planner" class="nav-btn text-frostedmint hover:text-drysage px-6 py-2 rounded-md font-semibold font-serif">Meal Planner</button>
+            <button id="nav-shopping" class="nav-btn text-frostedmint hover:text-drysage px-6 py-2 rounded-md font-semibold font-serif">Shopping List</button>
+        </nav>
+
+        <!-- PAGE 1: RECIPES -->
+        <div id="page-recipes" class="page max-w-3xl mx-auto">
+            <main class="bg-granite border border-sand p-6 sm:p-8 rounded-2xl border border-sand">
+                <div class="flex justify-between items-center mb-4">
+                     <h2 class="text-2xl font-semibold text-frostedmint font-serif">All Recipes</h2>
+                     <button id="open-add-modal-btn" class="inline-flex items-center gap-2 justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                         Add New Recipe
+                     </button>
+                </div>
+                <div id="recipes-list" class="space-y-4"></div>
+            </main>
+        </div>
+
+        <!-- PAGE 2: MEAL PLANNER -->
+        <div id="page-planner" class="page hidden">
+            <main class="bg-granite border border-sand p-6 sm:p-8 rounded-2xl border border-sand">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-frostedmint font-serif">Meal Plan</h2>
+                    <div class="flex gap-2">
+                        <button id="clear-plan-btn" class="inline-flex items-center gap-2 justify-center rounded-md border border-sand bg-drysage text-granite placeholder-granite/70 py-2 px-4 text-sm font-medium text-darkraspberry shadow-sm hover:bg-drysage/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            Clear Plan
+                        </button>
+                        <button id="generate-shopping-btn" class="inline-flex items-center gap-2 justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" /></svg>
+                            Generate List
+                        </button>
+                    </div>
+                </div>
+                <div id="meal-plan-grid" class="grid grid-cols-1 md:grid-cols-4 gap-1">
+                    <!-- Grid will be generated by JS -->
+                </div>
+            </main>
+        </div>
+        <!-- PAGE 3: SHOPPING LIST -->
+        <div id="page-shopping" class="page hidden max-w-3xl mx-auto">
+            <main class="bg-granite border border-sand p-6 sm:p-8 rounded-2xl border border-sand">
+                <h2 class="text-2xl font-semibold text-frostedmint font-serif mb-4">Shopping List</h2>
+                <div id="shopping-list-container" class="space-y-2 mb-6">
+                    <p class="text-drysage">Your shopping list is empty. Go to the Meal Planner and click "Generate List".</p>
+                </div>
+                <div class="border-t border-sand pt-4">
+                    <h3 class="text-lg font-medium text-frostedmint mb-2">Add Extra Item</h3>
+                    <form id="add-shopping-item-form" class="flex gap-2">
+                        <input type="text" name="item_name" placeholder="e.g. Milk, Bread" class="flex-1 rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand" required>
+                        <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-slate-600 py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:bg-slate-500">Add</button>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- MODALS -->
+    <div id="add-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-3xl border border-sand">
+            <h2 class="text-2xl font-semibold text-frostedmint mb-4">Add a New Recipe</h2>
+            <form id="add-recipe-form" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                <div class="sm:col-span-2"><label for="add-name" class="block text-sm font-medium text-drysage">Recipe Name</label><input type="text" name="name" id="add-name" required class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand"></div>
+                <div><label for="add-prep_time" class="block text-sm font-medium text-drysage">Prep Time (mins)</label><input type="number" name="prep_time" id="add-prep_time" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand"></div>
+                <div><label for="add-cook_time" class="block text-sm font-medium text-drysage">Cook Time (mins)</label><input type="number" name="cook_time" id="add-cook_time" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand"></div>
+                <div class="sm:col-span-2"><label for="add-servings" class="block text-sm font-medium text-drysage">Servings</label><input type="number" name="servings" id="add-servings" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand"></div>
+                <div class="sm:col-span-2"><label for="add-instructions" class="block text-sm font-medium text-drysage">Instructions</label><textarea name="instructions" id="add-instructions" rows="6" required class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand"></textarea></div>
+                <div class="sm:col-span-2 flex justify-end gap-4"><button type="button" id="cancel-add" class="rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button><button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Add Recipe</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-start justify-center p-4 overflow-y-auto">
+         <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-3xl my-auto border border-sand">
+            <h2 class="text-2xl font-semibold text-frostedmint mb-4 font-serif">Edit Recipe</h2>
+            <form id="edit-recipe-form"><input type="hidden" name="id" id="edit-id"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4"><div class="sm:col-span-2"><label for="edit-name" class="block text-sm font-medium text-drysage">Recipe Name</label><input type="text" name="name" id="edit-name" required class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></div><div><label for="edit-prep_time" class="block text-sm font-medium text-drysage">Prep Time (mins)</label><input type="number" name="prep_time" id="edit-prep_time" class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></div><div><label for="edit-cook_time" class="block text-sm font-medium text-drysage">Cook Time (mins)</label><input type="number" name="cook_time" id="edit-cook_time" class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></div><div class="sm:col-span-2"><label for="edit-servings" class="block text-sm font-medium text-drysage">Servings</label><input type="number" name="servings" id="edit-servings" class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></div><div class="sm:col-span-2"><label for="edit-instructions" class="block text-sm font-medium text-drysage">Instructions</label><textarea name="instructions" id="edit-instructions" rows="6" required class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></textarea></div></div></form>
+            <hr class="my-6 border-sand"><div class="ingredients-section"><h3 class="text-xl font-semibold text-frostedmint mb-4 font-serif">Ingredients</h3><div id="ingredients-list" class="space-y-2 mb-4"></div>
+            <div id="add-ingredient-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end p-4 bg-granite rounded-lg">
+                <div class="sm:col-span-2"><label for="ingredient-name" class="block text-sm font-medium text-drysage">Ingredient Name</label><input type="text" id="ingredient-name" placeholder="e.g., Onion" required class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                <div><label for="ingredient-quantity" class="block text-sm font-medium text-drysage">Quantity</label><input type="number" step="any" id="ingredient-quantity" placeholder="e.g., 2" required class="mt-1 block w-full rounded-md bg-drysage text-gray-900 placeholder-gray-500 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                <div class="sm:col-span-3 text-right"><button type="button" id="add-ingredient-btn" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Add Ingredient</button></div>
+            </div>
+            </div>
+            <div class="mt-8 flex justify-end gap-4"><button type="button" id="cancel-edit" class="rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button><button type="submit" form="edit-recipe-form" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Save Changes</button></div>
+        </div>
+    </div>
+    <div id="select-recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-md border border-sand">
+            <h2 class="text-xl font-semibold text-frostedmint mb-4">Select a Recipe</h2>
+            <div id="selectable-recipes-list" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            <button id="cancel-select-recipe" class="mt-4 w-full rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button>
+        </div>
+    </div>
+    <div id="delete-confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-md border border-sand">
+            <h2 class="text-xl font-semibold text-frostedmint mb-2">Delete Recipe</h2>
+            <p class="text-drysage mb-6">Are you sure you want to delete <span id="delete-recipe-name" class="font-bold text-frostedmint"></span>? This action cannot be undone.</p>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-delete" class="rounded-md border border-sand bg-slate-600 py-2 px-4 text-sm font-medium text-frostedmint hover:bg-slate-500">Cancel</button>
+                <button id="confirm-delete-btn" class="rounded-md border border-transparent bg-darkraspberry py-2 px-4 text-sm font-medium text-frostedmint hover:opacity-90">Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const SUPABASE_URL = 'https://gogaumvwgjcnchypnkut.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZ2F1bXZ3Z2pjbmNoeXBua3V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDk0NjQsImV4cCI6MjA3NTYyNTQ2NH0.UpdVK5HSP4_9In9x51oM7ToZP64B8CNSZDf-VIQPUe8';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let recipesCache = [];
+        let mealPlanCache = [];
+        let currentEditingRecipeId = null;
+        let currentMealSlotId = null;
+        let recipeToDeleteId = null;
+        let lastGeneratedShoppingMap = new Map();
+        let manualShoppingItems = [];
+
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const pages = document.querySelectorAll('.page');
+        const addModal = document.getElementById('add-modal');
+        const editModal = document.getElementById('edit-modal');
+        const selectRecipeModal = document.getElementById('select-recipe-modal');
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const recipesListContainer = document.getElementById('recipes-list');
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetPageId = `page-${btn.id.split('-')[1]}`;
+                pages.forEach(p => p.classList.add('hidden'));
+                document.getElementById(targetPageId).classList.remove('hidden');
+                navButtons.forEach(b => { 
+                    b.classList.remove('bg-sand', 'text-granite'); 
+                    b.classList.add('text-frostedmint', 'hover:text-drysage'); 
+                });
+                btn.classList.add('bg-sand', 'text-frostedmint');
+                btn.classList.remove('text-frostedmint', 'hover:text-drysage');
+            });
+        });
+
+        async function fetchRecipes() {
+            const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: false });
+            if (error) { console.error("Error fetching recipes:", error); return; }
+            recipesCache = data;
+        }
+
+        function renderRecipes() {
+            recipesListContainer.innerHTML = '';
+            if (recipesCache.length === 0) { recipesListContainer.innerHTML = '<p class="text-drysage">No recipes found.</p>'; return; }
+            recipesCache.forEach(recipe => {
+                const el = document.createElement('div');
+                el.className = 'p-4 border border-sand rounded-lg flex justify-between items-center';
+                el.innerHTML = `<div><h3 class="font-semibold text-lg text-frostedmint font-serif">${recipe.name}</h3><p class="text-sm text-drysage">Servings: ${recipe.servings || 'N/A'}</p></div><div class="flex gap-2"><button data-id="${recipe.id}" class="edit-btn text-drysage hover:text-sand" title="Edit Recipe"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button><button data-id="${recipe.id}" class="delete-btn text-drysage hover:text-darkraspberry" title="Delete Recipe"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button></div>`;
+                recipesListContainer.appendChild(el);
+            });
+        }
+
+        function openAddModal() { addModal.classList.remove('hidden'); }
+        function closeAddModal() { document.getElementById('add-recipe-form').reset(); addModal.classList.add('hidden'); }
+
+        async function handleAddFormSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const newRecipe = { name: formData.get('name'), instructions: formData.get('instructions'), prep_time: parseInt(formData.get('prep_time')) || null, cook_time: parseInt(formData.get('cook_time')) || null, servings: parseInt(formData.get('servings')) || null };
+            const { error } = await supabase.from('recipes').insert([newRecipe]);
+            if (error) { alert(`Error: ${error.message}`); } else {
+                closeAddModal();
+                await fetchRecipes();
+                renderRecipes();
+            }
+        }
+        
+        async function openEditModal(recipe) {
+            currentEditingRecipeId = recipe.id;
+            document.getElementById('edit-id').value = recipe.id;
+            document.getElementById('edit-name').value = recipe.name;
+            document.getElementById('edit-prep_time').value = recipe.prep_time;
+            document.getElementById('edit-cook_time').value = recipe.cook_time;
+            document.getElementById('edit-servings').value = recipe.servings;
+            document.getElementById('edit-instructions').value = recipe.instructions;
+            editModal.classList.remove('hidden');
+            await loadIngredientsForRecipe(recipe.id);
+        }
+
+        function closeEditModal() { editModal.classList.add('hidden'); }
+
+        async function handleEditFormSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const recipeId = formData.get('id');
+            const updatedData = { name: formData.get('name'), instructions: formData.get('instructions'), prep_time: parseInt(formData.get('prep_time')) || null, cook_time: parseInt(formData.get('cook_time')) || null, servings: parseInt(formData.get('servings')) || null };
+            const { error } = await supabase.from('recipes').update(updatedData).eq('id', recipeId);
+            if (error) { alert(`Error: ${error.message}`); } else {
+                closeEditModal();
+                await fetchRecipes();
+                renderRecipes();
+            }
+        }
+
+        function openDeleteConfirmModal(recipeId, recipeName) {
+            recipeToDeleteId = recipeId;
+            document.getElementById('delete-recipe-name').textContent = recipeName;
+            deleteConfirmModal.classList.remove('hidden');
+        }
+
+        function closeDeleteConfirmModal() {
+            recipeToDeleteId = null;
+            deleteConfirmModal.classList.add('hidden');
+        }
+
+        async function handleConfirmDelete() {
+            if (!recipeToDeleteId) return;
+            const { error } = await supabase.from('recipes').delete().eq('id', recipeToDeleteId);
+            if (error) { alert(`Error: ${error.message}`); } else {
+                closeDeleteConfirmModal();
+                await fetchRecipes();
+                renderRecipes();
+            }
+        }
+
+        // --- INGREDIENT LOGIC ---
+        async function loadIngredientsForRecipe(recipeId) {
+            const list = document.getElementById('ingredients-list');
+            list.innerHTML = `<p class="text-drysage">Loading...</p>`;
+            const { data, error } = await supabase.from('recipe_ingredients').select('id, quantity, ingredients(name)').eq('recipe_id', recipeId);
+            if(error) { console.error("Error loading ingredients:", error); list.innerHTML = `<p class="text-darkraspberry">Could not load ingredients.</p>`; return; }
+            renderIngredients(data);
+        }
+
+        function renderIngredients(ingredients) {
+            const list = document.getElementById('ingredients-list');
+            list.innerHTML = '';
+            if (ingredients.length === 0) { list.innerHTML = `<p class="text-sm text-sand">No ingredients added yet.</p>`; return; }
+            ingredients.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'flex justify-between items-center bg-drysage text-granite placeholder-granite/70 p-2 rounded-md';
+                el.innerHTML = `<p class="text-sm text-gray-900 font-semibold"><span class="font-bold">${item.ingredients.name}</span> - ${item.quantity}</p><button data-id="${item.id}" class="remove-ingredient-btn text-gray-600 hover:text-darkraspberry" title="Remove Ingredient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>`;
+                list.appendChild(el);
+            });
+        }
+
+        async function handleAddIngredient() {
+            const nameInput = document.getElementById('ingredient-name');
+            const quantityInput = document.getElementById('ingredient-quantity');
+            const name = nameInput.value.trim();
+            const quantity = parseFloat(quantityInput.value);
+            if (!name || !quantity || !currentEditingRecipeId) { alert('Please fill out all ingredient fields.'); return; }
+            
+            try {
+                let { data: existing } = await supabase.from('ingredients').select('id').eq('name', name).single();
+                let ingredientId;
+                if (existing) {
+                    ingredientId = existing.id;
+                } else {
+                    const { data: newIngredient, error } = await supabase.from('ingredients').insert({ name }).select('id').single();
+                    if(error) throw error;
+                    ingredientId = newIngredient.id;
+                }
+
+                const { error: linkError } = await supabase.from('recipe_ingredients').insert({ recipe_id: currentEditingRecipeId, ingredient_id: ingredientId, quantity });
+                if(linkError) throw linkError;
+
+                nameInput.value = '';
+                quantityInput.value = '';
+                await loadIngredientsForRecipe(currentEditingRecipeId);
+            } catch(error) {
+                console.error("Error adding ingredient:", error);
+                alert("Could not add ingredient.");
+            }
+        }
+
+        async function handleRemoveIngredient(recipeIngredientId) {
+            const { error } = await supabase.from('recipe_ingredients').delete().eq('id', recipeIngredientId);
+            if(error) { console.error("Error removing ingredient:", error); alert("Could not remove ingredient.");}
+            else { await loadIngredientsForRecipe(currentEditingRecipeId); }
+        }
+
+        // --- MEAL PLANNER LOGIC ---
+        const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const mealTypes = ["Breakfast", "Lunch", "Dinner"];
+
+        async function fetchMealPlan() {
+            const { data, error } = await supabase.from('meal_plan').select('*, recipes(name, servings, id)');
+            if (error) {
+                if (error.code === 'PGRST205') {
+                    document.getElementById('meal-plan-grid').innerHTML = `<div class="md:col-span-8 col-span-1 bg-yellow-900 border border-yellow-700 text-yellow-200 p-4 rounded-lg"><p class="font-bold">Database Table Not Found</p><p>The 'meal_plan' table is missing. Please create it in Supabase with columns: <b>slot_id</b> (text) and <b>recipe_id</b> (int8, foreign key to recipes).</p></div>`;
+                } else { console.error("Error fetching meal plan:", error); }
+                mealPlanCache = null;
+                return;
+            }
+            mealPlanCache = data;
+        }
+
+        function renderMealPlan() {
+            const grid = document.getElementById('meal-plan-grid');
+            if (!grid || mealPlanCache === null) return;
+            grid.innerHTML = '';
+            
+            // Header Row: Label + Meal Types
+            const headerRow = document.createElement('div');
+            headerRow.className = "contents";
+            headerRow.innerHTML = `<div class="p-2 hidden md:block"></div>` + mealTypes.map(type => `<div class="font-bold text-center text-frostedmint p-2 hidden md:block text-xl">${type}</div>`).join('');
+            grid.appendChild(headerRow);
+            
+            // Rows: Days
+            daysOfWeek.forEach(day => {
+                const dayRow = document.createElement('div');
+                dayRow.className = "contents";
+                
+                // Row Label (Day Name)
+                let rowHTML = `<div class="font-bold text-center text-frostedmint p-2 hidden md:flex items-center justify-center text-xl">${day}</div>`;
+                
+                mealTypes.forEach(mealType => {
+                    const slotId = `${day}-${mealType}`;
+                    const planEntry = mealPlanCache.find(p => p.slot_id === slotId);
+                    
+                    // Allow drop on empty slots OR slots with same recipe (handled in JS)
+                    const dropHandlers = `ondragover="event.preventDefault()"`;
+                    
+                    rowHTML += `<div class="meal-slot border border-sand rounded-md p-2 min-h-[120px] flex flex-col justify-between hover:bg-drysage text-granite placeholder-granite/70/50 transition-colors" ${dropHandlers} data-slot-id="${slotId}">`;
+                    
+                    if (planEntry) {
+                        // Use explicit portions if set, otherwise default to recipe servings
+                        const servings = planEntry.portions !== null && planEntry.portions !== undefined ? planEntry.portions : planEntry.recipes.servings;
+                        // Always draggable
+                        const isDraggable = true;
+                        const draggableAttr = 'draggable="true"';
+                        const cursorClass = 'cursor-grab active:cursor-grabbing';
+                        
+                        // Show badge for > 1 serving
+                        const servingsDisplay = servings > 1 ? `<div class="flex justify-center mt-3"><span class="flex items-center justify-center w-10 h-10 rounded-full bg-drysage text-granite placeholder-granite/70 border border-sand text-sm font-bold text-frostedmint shadow-inner">x${servings}</span></div>` : '';
+                        
+                        rowHTML += `<div ${draggableAttr} class="${cursorClass} h-full flex flex-col" data-plan-id="${planEntry.id}" data-recipe-id="${planEntry.recipes.id}" data-current-servings="${servings}">
+                            <div><div class="block md:hidden font-bold text-sm text-drysage mb-1">${day} - ${mealType}</div><p class="font-semibold text-frostedmint leading-tight text-center">${planEntry.recipes.name}</p>${servingsDisplay}</div>
+                        </div>
+                        <button data-id="${planEntry.id}" class="remove-from-plan-btn text-sand hover:text-darkraspberry self-end mt-[-20px] relative z-10" title="Remove from plan">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>`;
+                    } else {
+                        rowHTML += `<div class="block md:hidden font-bold text-sm text-drysage mb-1">${day} - ${mealType}</div><button data-slot-id="${slotId}" class="add-to-plan-btn w-full h-full flex items-center justify-center text-3xl text-drysage hover:text-frostedmint rounded-md">+</button>`;
+                    }
+                    rowHTML += `</div>`;
+                });
+                dayRow.innerHTML = rowHTML;
+                grid.appendChild(dayRow);
+            });
+            
+            // Re-attach listeners for dynamic elements
+            addDragListeners();
+        }
+
+        function addDragListeners() {
+            const draggables = document.querySelectorAll('[draggable="true"]');
+            const slots = document.querySelectorAll('.meal-slot');
+
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        sourcePlanId: draggable.dataset.planId,
+                        recipeId: draggable.dataset.recipeId,
+                        sourceServings: parseInt(draggable.dataset.currentServings)
+                    }));
+                    e.dataTransfer.effectAllowed = 'move';
+                    draggable.style.opacity = '0.5';
+                });
+                
+                draggable.addEventListener('dragend', (e) => {
+                     draggable.style.opacity = '1';
+                });
+            });
+
+            slots.forEach(slot => {
+                slot.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    
+                    const data = e.dataTransfer.getData('text/plain');
+                    if (!data) return;
+                    
+                    const { sourcePlanId, recipeId, sourceServings } = JSON.parse(data);
+                    const targetSlotId = slot.dataset.slotId;
+                    
+                    if (!targetSlotId || !sourcePlanId) return;
+
+                    // Check content of target slot
+                    const targetPlanEntry = mealPlanCache.find(p => p.slot_id === targetSlotId);
+
+                    // Prevent dropping on self
+                    if (targetPlanEntry && targetPlanEntry.id == sourcePlanId) return;
+
+                    let targetAction = null; 
+
+                    if (!targetPlanEntry) {
+                        targetAction = 'create_or_move';
+                    } else if (targetPlanEntry.recipes.id == recipeId) {
+                        targetAction = 'merge';
+                    } else {
+                        return; // Different recipe, ignore
+                    }
+
+                    try {
+                        if (sourceServings > 1) {
+                            // SPLIT: Decrement source, increment/create target
+                            const { error: updateError } = await supabase.from('meal_plan').update({ portions: sourceServings - 1 }).eq('id', sourcePlanId);
+                            if (updateError) throw updateError;
+
+                            if (targetAction === 'create_or_move') {
+                                const { error: insertError } = await supabase.from('meal_plan').insert([{ slot_id: targetSlotId, recipe_id: recipeId, portions: 1 }]);
+                                if (insertError) throw insertError;
+                            } else {
+                                const currentTargetPortions = targetPlanEntry.portions !== null ? targetPlanEntry.portions : targetPlanEntry.recipes.servings;
+                                const { error: mergeError } = await supabase.from('meal_plan').update({ portions: (currentTargetPortions || 1) + 1 }).eq('id', targetPlanEntry.id);
+                                if (mergeError) throw mergeError;
+                            }
+                        } else {
+                            // MOVE: Move or Merge-and-Delete source
+                            if (targetAction === 'create_or_move') {
+                                const { error: moveError } = await supabase.from('meal_plan').update({ slot_id: targetSlotId }).eq('id', sourcePlanId);
+                                if (moveError) throw moveError;
+                            } else {
+                                const currentTargetPortions = targetPlanEntry.portions !== null ? targetPlanEntry.portions : targetPlanEntry.recipes.servings;
+                                const { error: mergeError } = await supabase.from('meal_plan').update({ portions: (currentTargetPortions || 1) + 1 }).eq('id', targetPlanEntry.id);
+                                if (mergeError) throw mergeError;
+                                
+                                const { error: deleteError } = await supabase.from('meal_plan').delete().eq('id', sourcePlanId);
+                                if (deleteError) throw deleteError;
+                            }
+                        }
+
+                        await fetchMealPlan();
+                        renderMealPlan();
+
+                    } catch (err) {
+                        console.error("Drag and drop failed:", err);
+                        alert("Failed to move item.");
+                        await fetchMealPlan();
+                        renderMealPlan();
+                    }
+                });
+            });
+        }
+        
+        function openSelectRecipeModal(slotId) {
+            currentMealSlotId = slotId;
+            const list = document.getElementById('selectable-recipes-list');
+            list.innerHTML = '';
+            if (recipesCache.length === 0) { list.innerHTML = '<p class="text-drysage">No recipes to select.</p>'; }
+            recipesCache.forEach(recipe => {
+                const item = document.createElement('button');
+                item.className = 'w-full text-left p-2 rounded-md text-frostedmint hover:bg-drysage hover:text-granite font-medium transition-colors';
+                item.textContent = recipe.name;
+                item.dataset.recipeId = recipe.id;
+                list.appendChild(item);
+            });
+            selectRecipeModal.classList.remove('hidden');
+        }
+
+        function closeSelectRecipeModal() { selectRecipeModal.classList.add('hidden'); }
+
+        async function handleAddToPlan(recipeId) {
+            if (!currentMealSlotId || !recipeId) return;
+            const { error } = await supabase.from('meal_plan').insert([{ slot_id: currentMealSlotId, recipe_id: recipeId }]);
+            if (error) {
+                console.error("Error adding to meal plan:", error);
+                alert("Error: " + error.message);
+            } else {
+                await fetchMealPlan();
+                renderMealPlan();
+                closeSelectRecipeModal();
+            }
+        }
+
+        async function handleRemoveFromPlan(planId) {
+            const { error } = await supabase.from('meal_plan').delete().eq('id', planId);
+            if (error) { console.error("Error removing from plan:", error); } else {
+                await fetchMealPlan();
+                renderMealPlan();
+            }
+        }
+        
+        // --- EVENT LISTENERS ---
+        document.getElementById('open-add-modal-btn').addEventListener('click', openAddModal);
+        document.getElementById('add-recipe-form').addEventListener('submit', handleAddFormSubmit);
+        document.getElementById('cancel-add').addEventListener('click', closeAddModal);
+        document.getElementById('edit-recipe-form').addEventListener('submit', handleEditFormSubmit);
+        document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
+        document.getElementById('add-ingredient-btn').addEventListener('click', handleAddIngredient);
+        
+        document.getElementById('cancel-delete').addEventListener('click', closeDeleteConfirmModal);
+        document.getElementById('confirm-delete-btn').addEventListener('click', handleConfirmDelete);
+        document.getElementById('generate-shopping-btn').addEventListener('click', generateShoppingList);
+        document.getElementById('clear-plan-btn').addEventListener('click', handleClearMealPlan);
+
+        async function handleClearMealPlan() {
+            if (!confirm("Are you sure you want to clear the entire meal plan for this week?")) return;
+            
+            const { error } = await supabase.from('meal_plan').delete().neq('id', 0); // Delete all rows
+            if (error) {
+                console.error("Error clearing meal plan:", error);
+                alert("Could not clear meal plan.");
+            } else {
+                await fetchMealPlan();
+                renderMealPlan();
+            }
+        }
+
+        recipesListContainer.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (editBtn) {
+                const recipe = recipesCache.find(r => r.id == editBtn.dataset.id);
+                if(recipe) openEditModal(recipe);
+            }
+            if (deleteBtn) {
+                const recipe = recipesCache.find(r => r.id == deleteBtn.dataset.id);
+                if (recipe) openDeleteConfirmModal(recipe.id, recipe.name);
+            }
+        });
+        
+        document.getElementById('ingredients-list').addEventListener('click', (e) => {
+             if (e.target.closest('.remove-ingredient-btn')) {
+                handleRemoveIngredient(e.target.closest('.remove-ingredient-btn').dataset.id);
+            }
+        });
+        
+        // --- SHOPPING LIST LOGIC ---
+        async function generateShoppingList() {
+            if (!mealPlanCache || mealPlanCache.length === 0) {
+                alert("Your meal plan is empty!");
+                return;
+            }
+
+            const shoppingMap = new Map(); // Name -> { quantity, unit (implied) }
+
+            // 1. Get all recipe IDs from the meal plan
+            const recipeIds = [...new Set(mealPlanCache.map(p => p.recipes.id))];
+
+            // 2. Fetch ingredients for ALL these recipes in one go
+            const { data: allIngredients, error } = await supabase
+                .from('recipe_ingredients')
+                .select('recipe_id, quantity, ingredients(name)')
+                .in('recipe_id', recipeIds);
+
+            if (error) {
+                console.error("Error fetching ingredients for shopping list:", error);
+                alert("Could not generate list.");
+                return;
+            }
+
+            // 3. Aggregate
+            mealPlanCache.forEach(planEntry => {
+                const portions = planEntry.portions || planEntry.recipes.servings || 1;
+                const originalServings = planEntry.recipes.servings || 1;
+                const ratio = portions / originalServings;
+
+                const entryIngredients = allIngredients.filter(ri => ri.recipe_id === planEntry.recipes.id);
+                
+                entryIngredients.forEach(ing => {
+                    const name = ing.ingredients.name;
+                    const amount = ing.quantity * ratio;
+                    
+                    if (shoppingMap.has(name)) {
+                        shoppingMap.set(name, shoppingMap.get(name) + amount);
+                    } else {
+                        shoppingMap.set(name, amount);
+                    }
+                });
+            });
+
+            lastGeneratedShoppingMap = shoppingMap;
+            renderShoppingList(shoppingMap);
+            
+            // Navigate to shopping page
+            document.getElementById('nav-shopping').click();
+        }
+
+        function renderShoppingList(shoppingMap = lastGeneratedShoppingMap) {
+            const container = document.getElementById('shopping-list-container');
+            container.innerHTML = '';
+            
+            if (shoppingMap.size === 0 && manualShoppingItems.length === 0) {
+                container.innerHTML = '<p class="text-drysage">No ingredients found.</p>';
+                return;
+            }
+
+            // Generated Items
+            const sortedIngredients = Array.from(shoppingMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+            sortedIngredients.forEach(([name, quantity]) => {
+                const formattedQuantity = parseFloat(quantity.toFixed(2));
+                appendShoppingItem(name, formattedQuantity, false);
+            });
+
+            // Manual Items
+            if (manualShoppingItems.length > 0) {
+                // Optional divider if we have both
+                if (shoppingMap.size > 0) {
+                    const divider = document.createElement('div');
+                    divider.className = "border-t border-sand my-2";
+                    container.appendChild(divider);
+                }
+                manualShoppingItems.forEach(item => {
+                    appendShoppingItem(item, null, true);
+                });
+            }
+        }
+
+        function appendShoppingItem(name, quantity, isManual) {
+            const container = document.getElementById('shopping-list-container');
+            const el = document.createElement('div');
+            el.className = 'flex items-center p-3 bg-granite border border-sand rounded-lg hover:bg-drysage/10 transition-colors cursor-pointer mb-2';
+            
+            el.onclick = (e) => {
+                if (e.target.type !== 'checkbox' && e.target.tagName !== 'BUTTON') {
+                    const cb = el.querySelector('input[type="checkbox"]');
+                    cb.checked = !cb.checked;
+                    cb.dispatchEvent(new Event('change'));
+                }
+            };
+
+            const quantityHTML = quantity !== null ? `<span class="ml-auto font-mono text-sand font-bold">${quantity}</span>` : '<span class="ml-auto text-drysage text-sm">Manual</span>';
+            const deleteBtn = isManual ? `<button class="ml-2 text-drysage hover:text-darkraspberry delete-manual-item">×</button>` : '';
+
+            el.innerHTML = `
+                <input type="checkbox" class="w-5 h-5 rounded border-sand text-sand focus:ring-sand bg-granite">
+                <span class="ml-3 text-frostedmint text-lg select-none">${name}</span>
+                ${quantityHTML}
+                ${deleteBtn}
+            `;
+            
+            const checkbox = el.querySelector('input');
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    el.querySelector('span.text-frostedmint').classList.add('line-through', 'text-drysage');
+                    el.querySelector('span.text-frostedmint').classList.remove('text-frostedmint');
+                } else {
+                    el.querySelector('span.line-through').classList.add('text-frostedmint');
+                    el.querySelector('span.line-through').classList.remove('line-through', 'text-drysage');
+                }
+            });
+            
+            if (isManual) {
+                el.querySelector('.delete-manual-item').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeManualItem(name);
+                });
+            }
+
+            container.appendChild(el);
+        }
+
+        function handleAddManualItem(e) {
+            e.preventDefault();
+            const input = e.target.querySelector('input[name="item_name"]');
+            const name = input.value.trim();
+            if (name) {
+                manualShoppingItems.push(name);
+                input.value = '';
+                // Optimistically append to avoid full re-render (which kills check state)
+                // Actually, renderShoppingList redraws everything, killing check state.
+                // For a proper app we need state for checks. For this prototype, re-render is safer for order, 
+                // but annoying. Let's just append to DOM if we can, but we need to handle the "Empty" state removal.
+                // Simplest: just call render. The user just added an item, they probably haven't checked much yet.
+                renderShoppingList();
+            }
+        }
+
+        function removeManualItem(name) {
+            manualShoppingItems = manualShoppingItems.filter(i => i !== name);
+            renderShoppingList();
+        }
+
+        document.getElementById('add-shopping-item-form').addEventListener('submit', handleAddManualItem);
+
+        document.getElementById('meal-plan-grid').addEventListener('click', (e) => {
+            const addBtn = e.target.closest('.add-to-plan-btn');
+            const removeBtn = e.target.closest('.remove-from-plan-btn');
+            if (addBtn) { openSelectRecipeModal(addBtn.dataset.slotId); }
+            if (removeBtn) { handleRemoveFromPlan(removeBtn.dataset.id); }
+        });
+
+        document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
+        document.getElementById('selectable-recipes-list').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.recipeId) {
+                handleAddToPlan(e.target.dataset.recipeId);
+            }
+        });
+
+        async function initializeApp() {
+            await Promise.all([fetchRecipes(), fetchMealPlan()]);
+            renderRecipes();
+            renderMealPlan();
+        }
+
+        initializeApp();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
+        }
+    </script>
+</body>
+</html>
+
+
