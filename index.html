@@ -1086,6 +1086,90 @@
             }
         }
 
+        async function generateShoppingList() {
+            if (mealPlanCache.length === 0) {
+                alert("Meal plan is empty. Add some recipes first!");
+                return;
+            }
+
+            lastGeneratedShoppingMap.clear();
+            const listContainer = document.getElementById('shopping-list-container');
+            listContainer.innerHTML = '<p class="text-drysage italic">Generating list...</p>';
+
+            for (const slot of mealPlanCache) {
+                const { data: ingredients, error } = await supabase
+                    .from('recipe_ingredients')
+                    .select('quantity, ingredients(name)')
+                    .eq('recipe_id', slot.recipe_id);
+                
+                if (error) {
+                    console.error("Error fetching ingredients for recipe:", slot.recipe_id, error);
+                    continue;
+                }
+
+                if (ingredients) {
+                    ingredients.forEach(item => {
+                        const name = item.ingredients.name;
+                        const qty = parseFloat(item.quantity) || 0; 
+                        if (lastGeneratedShoppingMap.has(name)) {
+                            lastGeneratedShoppingMap.set(name, lastGeneratedShoppingMap.get(name) + qty);
+                        } else {
+                            lastGeneratedShoppingMap.set(name, qty);
+                        }
+                    });
+                }
+            }
+            
+            renderShoppingList();
+            
+            // Switch to shopping tab
+            navButtons.forEach(btn => btn.classList.remove('active', 'text-frostedmint', 'bg-sand'));
+            pages.forEach(p => p.classList.add('hidden'));
+            document.getElementById('nav-shopping').classList.add('active', 'text-frostedmint', 'bg-sand');
+            document.getElementById('page-shopping').classList.remove('hidden');
+        }
+
+        function renderShoppingList() {
+            const listContainer = document.getElementById('shopping-list-container');
+            listContainer.innerHTML = '';
+
+            if (lastGeneratedShoppingMap.size === 0 && manualShoppingItems.length === 0) {
+                 listContainer.innerHTML = '<p class="text-drysage">Your shopping list is empty. Go to the Meal Planner and click "Generate List".</p>';
+                 return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = "divide-y divide-sand";
+
+            lastGeneratedShoppingMap.forEach((qty, name) => {
+                const li = document.createElement('li');
+                li.className = "py-3 flex justify-between items-center";
+                li.innerHTML = `
+                    <span class="text-frostedmint">${name}</span>
+                    <span class="text-drysage font-mono">${qty > 0 ? qty : ''}</span>
+                `;
+                ul.appendChild(li);
+            });
+
+            manualShoppingItems.forEach(item => {
+                 const li = document.createElement('li');
+                li.className = "py-3 flex justify-between items-center";
+                li.innerHTML = `
+                    <span class="text-frostedmint">${item}</span>
+                    <button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm" data-item="${item}">Remove</button>
+                `;
+                ul.appendChild(li);
+            });
+
+            listContainer.appendChild(ul);
+            
+            ul.querySelectorAll('.remove-manual-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    removeManualItem(e.target.dataset.item);
+                });
+            });
+        }
+
         function handleAddManualItem(e) {
             e.preventDefault();
             const input = e.target.querySelector('input[name="item_name"]');
