@@ -330,6 +330,9 @@
         let manualShoppingItems = [];
         let newIngredientsBuffer = [];
 
+        const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const mealTypes = ['Breakfast', 'Lunch', 'Dinner'];
+
         // Global Error Handler
         window.addEventListener('error', function(event) {
             console.error('Global Error:', event.error);
