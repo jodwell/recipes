@@ -681,6 +681,15 @@
         // --- FORM HANDLERS ---
         async function handleAddFormSubmit(event) {
             event.preventDefault();
+            
+            if (!supabase) {
+                alert("Not connected to Supabase. Please check your settings.");
+                openSettings();
+                return;
+            }
+
+            const formData = new FormData(event.target);
+            // ... (rest of function)
             const formData = new FormData(event.target);
             
             const imageBase64 = document.getElementById('add-image-base64').value || null;
@@ -732,6 +741,11 @@
 
         async function handleEditFormSubmit(event) {
             event.preventDefault();
+            if (!supabase) {
+                alert("Not connected to Supabase. Please check your settings.");
+                openSettings();
+                return;
+            }
             const formData = new FormData(event.target);
             const recipeId = formData.get('id');
 
@@ -937,6 +951,11 @@
 
         async function handleConfirmDelete() {
             if (!recipeToDeleteId) return;
+            if (!supabase) {
+                alert("Not connected to Supabase. Please check your settings.");
+                openSettings();
+                return;
+            }
             const { error } = await supabase.from('recipes').delete().eq('id', recipeToDeleteId);
             if (error) { alert(`Error: ${error.message}`); } else {
                 closeDeleteConfirmModal();
