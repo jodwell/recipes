@@ -294,6 +294,7 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
+        // Global State
         let supabase;
         let recipesCache = [];
         let mealPlanCache = [];
@@ -303,6 +304,12 @@
         let lastGeneratedShoppingMap = new Map();
         let manualShoppingItems = [];
         let newIngredientsBuffer = [];
+
+        // Global Error Handler
+        window.addEventListener('error', function(event) {
+            console.error('Global Error:', event.error);
+            alert('An error occurred in the app: ' + event.message + '\nCheck console for details.');
+        });
 
         // UI Refs
         const navButtons = document.querySelectorAll('.nav-btn');
@@ -315,6 +322,7 @@
         const recipesListContainer = document.getElementById('recipes-list');
         const viewRecipeModal = document.getElementById('view-recipe-modal');
 
+        // --- SETUP & CONNECTION LOGIC ---
         function getStoredConfig() {
             return {
                 url: localStorage.getItem('supabase_url'),
@@ -323,15 +331,18 @@
         }
 
         async function initApp() {
+            console.log("Initializing App...");
             const config = getStoredConfig();
             
             if (!config.url || !config.key) {
+                console.log("No config found, opening settings.");
                 openSettings(true); 
                 return;
             }
 
             try {
                 supabase = createClient(config.url, config.key);
+                console.log("Supabase client initialized.");
                 
                 const { data: { session }, error } = await supabase.auth.getSession();
                 
@@ -341,15 +352,20 @@
                     return;
                 }
 
+                console.log("Session found, fetching data...");
                 await Promise.all([fetchRecipes(), fetchMealPlan()]);
                 renderRecipes();
                 renderMealPlan();
                 settingsModal.classList.add('hidden');
+                console.log("App loaded successfully.");
 
             } catch (e) {
                 console.error("Initialization failed", e);
-                document.getElementById('auth-error').textContent = "Connection failed. Check keys.";
-                document.getElementById('auth-error').classList.remove('hidden');
+                const errorDiv = document.getElementById('auth-error');
+                if(errorDiv) {
+                    errorDiv.textContent = "Connection failed. Check keys.";
+                    errorDiv.classList.remove('hidden');
+                }
                 openSettings(true);
             }
         }
@@ -380,6 +396,7 @@
             return { email: formData.get('email'), password: formData.get('password') };
         }
 
+        // --- AUTH HANDLERS ---
         document.getElementById('settings-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { email, password } = saveConfig();
@@ -432,6 +449,7 @@
         document.getElementById('open-settings-btn').addEventListener('click', () => openSettings(false));
         document.getElementById('cancel-settings').addEventListener('click', () => settingsModal.classList.add('hidden'));
 
+        // --- NAVIGATION ---
         navButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetPageId = `page-${btn.id.split('-')[1]}`;
@@ -446,21 +464,26 @@
             });
         });
 
+        // --- DATA FETCHING ---
         async function fetchRecipes() {
             const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: false });
             if (error) { console.error("Error fetching recipes:", error); return; }
             recipesCache = data;
         }
 
-        const readFileAsBase64 = (file) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        };
+        async function fetchMealPlan() {
+            const { data, error } = await supabase.from('meal_plan').select('*, recipes(name, servings, id)');
+            if (error) {
+                if (error.code === 'PGRST205') {
+                    document.getElementById('meal-plan-grid').innerHTML = `<div class="md:col-span-8 col-span-1 bg-yellow-900 border border-yellow-700 text-yellow-200 p-4 rounded-lg"><p class="font-bold">Database Table Not Found</p><p>The 'meal_plan' table is missing. Please create it in Supabase with columns: <b>slot_id</b> (text) and <b>recipe_id</b> (int8, foreign key to recipes).</p></div>`;
+                } else { console.error("Error fetching meal plan:", error); }
+                mealPlanCache = null;
+                return;
+            }
+            mealPlanCache = data;
+        }
 
+        // --- RENDERERS ---
         function renderRecipes() {
             recipesListContainer.innerHTML = '';
             if (recipesCache.length === 0) { recipesListContainer.innerHTML = '<p class="text-drysage">No recipes found.</p>'; return; }
@@ -505,6 +528,114 @@
             });
         }
 
+        function renderMealPlan() {
+            const grid = document.getElementById('meal-plan-grid');
+            if (!grid || mealPlanCache === null) return;
+            grid.innerHTML = '';
+            
+            const headerRow = document.createElement('div');
+            headerRow.className = "contents";
+            headerRow.innerHTML = `<div class="p-1 md:p-2"></div>` + mealTypes.map(type => `<div class="font-bold text-center text-frostedmint p-1 md:p-2 text-xs md:text-xl">${type}</div>`).join('');
+            grid.appendChild(headerRow);
+            
+            daysOfWeek.forEach(day => {
+                const dayRow = document.createElement('div');
+                dayRow.className = "contents";
+                
+                let rowHTML = `<div class="font-bold text-center text-frostedmint p-1 md:p-2 flex items-center justify-center text-xs md:text-xl">
+                    <span class="md:hidden">${day.substring(0, 3)}</span>
+                    <span class="hidden md:block">${day}</span>
+                </div>`;
+                
+                mealTypes.forEach(mealType => {
+                    const slotId = `${day}-${mealType}`;
+                    const planEntry = mealPlanCache.find(p => p.slot_id === slotId);
+                    
+                    const dropHandlers = `ondragover="event.preventDefault()"` ;
+                    
+                    const bgColorClass = planEntry ? 'bg-deepmoss' : 'bg-transparent';
+                    rowHTML += `<div class="meal-slot border border-sand rounded-md p-1 md:p-2 min-h-[80px] md:min-h-[120px] flex flex-col justify-between hover:bg-drysage text-granite placeholder-granite/70/50 transition-colors ${bgColorClass}" ${dropHandlers} data-slot-id="${slotId}">`;
+                    
+                    if (planEntry) {
+                        const servings = planEntry.portions !== null && planEntry.portions !== undefined ? planEntry.portions : planEntry.recipes.servings;
+                        const isDraggable = true;
+                        const draggableAttr = 'draggable="true"';
+                        const cursorClass = 'cursor-grab active:cursor-grabbing';
+                        
+                        const servingsDisplay = servings > 1 ? `<div class="flex justify-center mt-1 md:mt-3"><span class="flex items-center justify-center w-6 h-6 md:w-10 md:h-10 rounded-full bg-drysage text-granite placeholder-granite/70 border border-sand text-[10px] md:text-sm font-bold text-frostedmint shadow-inner">x${servings}</span></div>` : '';
+                        
+                        rowHTML += `<div ${draggableAttr} class="${cursorClass} h-full flex flex-col" data-plan-id="${planEntry.id}" data-recipe-id="${planEntry.recipes.id}" data-current-servings="${servings}">
+                            <div><p class="font-semibold text-frostedmint leading-tight text-center text-[10px] md:text-base">${planEntry.recipes.name}</p>${servingsDisplay}</div>
+                        </div>
+                        <button data-id="${planEntry.id}" class="remove-from-plan-btn text-sand hover:text-darkraspberry self-end mt-[-15px] md:mt-[-20px] relative z-10" title="Remove from plan">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>`;
+                    } else {
+                        rowHTML += `<button data-slot-id="${slotId}" class="add-to-plan-btn w-full h-full flex items-center justify-center text-xl md:text-3xl text-drysage hover:text-frostedmint rounded-md">+</button>`;
+                    }
+                    rowHTML += `</div>`;
+                });
+                dayRow.innerHTML = rowHTML;
+                grid.appendChild(dayRow);
+            });
+            
+            addDragListeners();
+        }
+
+        // --- UI UTILS & MODALS ---
+        const readFileAsBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
+
+        function openAddModal() { 
+            addModal.classList.remove('hidden'); 
+            document.getElementById('add-image-input').value = '';
+            document.getElementById('add-image-base64').value = '';
+            document.getElementById('add-image-preview-container').classList.add('hidden');
+            
+            newIngredientsBuffer = [];
+            renderNewIngredientsBuffer();
+            document.getElementById('add-ing-name').value = '';
+            document.getElementById('add-ing-qty').value = '';
+        }
+        function closeAddModal() { document.getElementById('add-recipe-form').reset(); addModal.classList.add('hidden'); }
+
+        async function openEditModal(recipe) {
+            currentEditingRecipeId = recipe.id;
+            document.getElementById('edit-id').value = recipe.id;
+            document.getElementById('edit-name').value = recipe.name;
+            document.getElementById('edit-prep_time').value = recipe.prep_time;
+            document.getElementById('edit-cook_time').value = recipe.cook_time;
+            document.getElementById('edit-servings').value = recipe.servings;
+            document.getElementById('edit-instructions').value = recipe.instructions;
+            
+            const hiddenInput = document.getElementById('edit-image-base64');
+            const previewContainer = document.getElementById('edit-image-preview-container');
+            const previewImg = document.getElementById('edit-image-preview');
+            
+            document.getElementById('edit-image-input').value = ''; 
+            
+            if (recipe.image_url) {
+                hiddenInput.value = recipe.image_url;
+                previewImg.src = recipe.image_url;
+                previewContainer.classList.remove('hidden');
+            } else {
+                hiddenInput.value = '';
+                previewContainer.classList.add('hidden');
+            }
+            
+            editModal.classList.remove('hidden');
+            await loadIngredientsForRecipe(recipe.id);
+        }
+        function closeEditModal() { editModal.classList.add('hidden'); }
+
         async function openViewModal(recipeId) {
             const recipe = recipesCache.find(r => r.id == recipeId);
             if (!recipe) return;
@@ -545,74 +676,9 @@
 
             viewRecipeModal.classList.remove('hidden');
         }
+        document.getElementById('close-view-modal').addEventListener('click', () => viewRecipeModal.classList.add('hidden'));
 
-        document.getElementById('close-view-modal').addEventListener('click', () => {
-            viewRecipeModal.classList.add('hidden');
-        });
-
-        function openAddModal() { 
-            addModal.classList.remove('hidden'); 
-            document.getElementById('add-image-input').value = '';
-            document.getElementById('add-image-base64').value = '';
-            document.getElementById('add-image-preview-container').classList.add('hidden');
-            
-            newIngredientsBuffer = [];
-            renderNewIngredientsBuffer();
-            document.getElementById('add-ing-name').value = '';
-            document.getElementById('add-ing-qty').value = '';
-        }
-        function closeAddModal() { document.getElementById('add-recipe-form').reset(); addModal.classList.add('hidden'); }
-
-        function renderNewIngredientsBuffer() {
-            const list = document.getElementById('add-ingredients-list');
-            list.innerHTML = '';
-            if (newIngredientsBuffer.length === 0) { 
-                list.innerHTML = `<p class="text-sm text-sand">No ingredients added yet.</p>`; 
-                return; 
-            }
-            newIngredientsBuffer.forEach((item, index) => {
-                const el = document.createElement('div');
-                el.className = 'flex justify-between items-center bg-drysage text-granite placeholder-granite/70 p-2 rounded-md';
-                el.innerHTML = `<p class="text-sm text-gray-900"><span>${item.name}</span> - ${item.quantity}</p>
-                <button type="button" class="remove-buffer-btn text-gray-600 hover:text-darkraspberry" data-index="${index}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>`;
-                list.appendChild(el);
-            });
-            
-            list.querySelectorAll('.remove-buffer-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const idx = parseInt(e.currentTarget.dataset.index);
-                    removeFromIngredientBuffer(idx);
-                });
-            });
-        }
-
-        function addToIngredientBuffer() {
-            const nameInput = document.getElementById('add-ing-name');
-            const qtyInput = document.getElementById('add-ing-qty');
-            const name = nameInput.value.trim();
-            const qty = parseFloat(qtyInput.value);
-
-            if (!name || !qty) {
-                alert("Please enter a name and quantity.");
-                return;
-            }
-
-            newIngredientsBuffer.push({ name, quantity: qty });
-            nameInput.value = '';
-            qtyInput.value = '';
-            nameInput.focus();
-            renderNewIngredientsBuffer();
-        }
-
-        function removeFromIngredientBuffer(index) {
-            newIngredientsBuffer.splice(index, 1);
-            renderNewIngredientsBuffer();
-        }
-
+        // --- FORM HANDLERS ---
         async function handleAddFormSubmit(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
@@ -663,36 +729,6 @@
                 alert(`Error: ${err.message}`);
             }
         }
-        
-        async function openEditModal(recipe) {
-            currentEditingRecipeId = recipe.id;
-            document.getElementById('edit-id').value = recipe.id;
-            document.getElementById('edit-name').value = recipe.name;
-            document.getElementById('edit-prep_time').value = recipe.prep_time;
-            document.getElementById('edit-cook_time').value = recipe.cook_time;
-            document.getElementById('edit-servings').value = recipe.servings;
-            document.getElementById('edit-instructions').value = recipe.instructions;
-            
-            const hiddenInput = document.getElementById('edit-image-base64');
-            const previewContainer = document.getElementById('edit-image-preview-container');
-            const previewImg = document.getElementById('edit-image-preview');
-            
-            document.getElementById('edit-image-input').value = ''; 
-            
-            if (recipe.image_url) {
-                hiddenInput.value = recipe.image_url;
-                previewImg.src = recipe.image_url;
-                previewContainer.classList.remove('hidden');
-            } else {
-                hiddenInput.value = '';
-                previewContainer.classList.add('hidden');
-            }
-            
-            editModal.classList.remove('hidden');
-            await loadIngredientsForRecipe(recipe.id);
-        }
-
-        function closeEditModal() { editModal.classList.add('hidden'); }
 
         async function handleEditFormSubmit(event) {
             event.preventDefault();
@@ -718,6 +754,119 @@
             }
         }
 
+        function renderNewIngredientsBuffer() {
+            const list = document.getElementById('add-ingredients-list');
+            list.innerHTML = '';
+            if (newIngredientsBuffer.length === 0) { 
+                list.innerHTML = `<p class="text-sm text-sand">No ingredients added yet.</p>`; 
+                return; 
+            }
+            newIngredientsBuffer.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'flex justify-between items-center bg-drysage text-granite placeholder-granite/70 p-2 rounded-md';
+                el.innerHTML = `<p class="text-sm text-gray-900"><span>${item.name}</span> - ${item.quantity}</p>
+                <button type="button" class="remove-buffer-btn text-gray-600 hover:text-darkraspberry" data-index="${index}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>`;
+                list.appendChild(el);
+            });
+            
+            list.querySelectorAll('.remove-buffer-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.dataset.index);
+                    newIngredientsBuffer.splice(idx, 1);
+                    renderNewIngredientsBuffer();
+                });
+            });
+        }
+
+        function addToIngredientBuffer() {
+            const nameInput = document.getElementById('add-ing-name');
+            const qtyInput = document.getElementById('add-ing-qty');
+            const name = nameInput.value.trim();
+            const qty = parseFloat(qtyInput.value);
+
+            if (!name || !qty) {
+                alert("Please enter a name and quantity.");
+                return;
+            }
+
+            newIngredientsBuffer.push({ name, quantity: qty });
+            nameInput.value = '';
+            qtyInput.value = '';
+            nameInput.focus();
+            renderNewIngredientsBuffer();
+        }
+
+        // --- LISTENERS ---
+        document.getElementById('open-add-modal-btn').addEventListener('click', openAddModal);
+        document.getElementById('add-recipe-form').addEventListener('submit', handleAddFormSubmit);
+        document.getElementById('cancel-add').addEventListener('click', closeAddModal);
+        
+        document.getElementById('edit-recipe-form').addEventListener('submit', handleEditFormSubmit);
+        document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
+        document.getElementById('add-ingredient-btn').addEventListener('click', handleAddIngredient);
+        document.getElementById('btn-add-ing-to-buffer').addEventListener('click', addToIngredientBuffer);
+        
+        document.getElementById('cancel-delete').addEventListener('click', closeDeleteConfirmModal);
+        document.getElementById('confirm-delete-btn').addEventListener('click', handleConfirmDelete);
+        
+        document.getElementById('generate-shopping-btn').addEventListener('click', generateShoppingList);
+        document.getElementById('clear-plan-btn').addEventListener('click', handleClearMealPlan);
+
+        document.getElementById('add-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'add-image-base64', 'add-image-preview-container', 'add-image-preview'));
+        document.getElementById('edit-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview'));
+        
+        document.getElementById('add-generate-btn').addEventListener('click', () => handleGenerateImage('add-name', 'add-instructions', 'add-image-base64', 'add-image-preview-container', 'add-image-preview', 'add-generate-btn'));
+        document.getElementById('edit-generate-btn').addEventListener('click', () => handleGenerateImage('edit-name', 'edit-instructions', 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview', 'edit-generate-btn'));
+        
+        document.getElementById('add-remove-image').addEventListener('click', () => handleRemoveImage('add-image-base64', 'add-image-preview-container', 'add-image-input'));
+        document.getElementById('edit-remove-image').addEventListener('click', () => handleRemoveImage('edit-image-base64', 'edit-image-preview-container', 'edit-image-input'));
+
+        document.getElementById('add-shopping-item-form').addEventListener('submit', handleAddManualItem);
+
+        recipesListContainer.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (editBtn) {
+                const recipe = recipesCache.find(r => r.id == editBtn.dataset.id);
+                if(recipe) openEditModal(recipe);
+            } else if (deleteBtn) {
+                const recipe = recipesCache.find(r => r.id == deleteBtn.dataset.id);
+                if (recipe) openDeleteConfirmModal(recipe.id, recipe.name);
+            }
+        });
+        
+        document.getElementById('ingredients-list').addEventListener('click', (e) => {
+             if (e.target.closest('.remove-ingredient-btn')) {
+                handleRemoveIngredient(e.target.closest('.remove-ingredient-btn').dataset.id);
+            }
+        });
+
+        document.getElementById('meal-plan-grid').addEventListener('click', (e) => {
+            const addBtn = e.target.closest('.add-to-plan-btn');
+            const removeBtn = e.target.closest('.remove-from-plan-btn');
+            const mealSlotContent = e.target.closest('[data-recipe-id]');
+            
+            if (addBtn) { 
+                openSelectRecipeModal(addBtn.dataset.slotId); 
+            } else if (removeBtn) { 
+                handleRemoveFromPlan(removeBtn.dataset.id); 
+            } else if (mealSlotContent) {
+                openViewModal(mealSlotContent.dataset.recipeId);
+            }
+        });
+
+        document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
+        document.getElementById('selectable-recipes-list').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.recipeId) {
+                handleAddToPlan(e.target.dataset.recipeId);
+            }
+        });
+
+        // --- UTILS ---
         async function handleImageFileSelect(e, hiddenInputId, previewContainerId, previewImgId) {
             const file = e.target.files[0];
             if (!file) return;
@@ -796,448 +945,6 @@
             }
         }
 
-        async function loadIngredientsForRecipe(recipeId) {
-            const list = document.getElementById('ingredients-list');
-            list.innerHTML = `<p class="text-drysage">Loading...</p>`;
-            const { data, error } = await supabase.from('recipe_ingredients').select('id, quantity, ingredients(name)').eq('recipe_id', recipeId);
-            if(error) { console.error("Error loading ingredients:", error); list.innerHTML = `<p class="text-darkraspberry">Could not load ingredients.</p>`; return; }
-            renderIngredients(data);
-        }
-
-        function renderIngredients(ingredients) {
-            const list = document.getElementById('ingredients-list');
-            list.innerHTML = '';
-            if (ingredients.length === 0) { list.innerHTML = `<p class="text-sm text-sand">No ingredients added yet.</p>`; return; }
-            ingredients.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'flex justify-between items-center bg-drysage text-granite placeholder-granite/70 p-2 rounded-md';
-                el.innerHTML = `<p class="text-sm text-gray-900"><span>${item.ingredients.name}</span> - ${item.quantity}</p><button data-id="${item.id}" class="remove-ingredient-btn text-gray-600 hover:text-darkraspberry" title="Remove Ingredient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>`;
-                list.appendChild(el);
-            });
-        }
-
-        async function handleAddIngredient() {
-            const nameInput = document.getElementById('ingredient-name');
-            const quantityInput = document.getElementById('ingredient-quantity');
-            const name = nameInput.value.trim();
-            const quantity = parseFloat(quantityInput.value);
-            if (!name || !quantity || !currentEditingRecipeId) { alert('Please fill out all ingredient fields.'); return; }
-            
-            try {
-                let { data: existing } = await supabase.from('ingredients').select('id').eq('name', name).single();
-                let ingredientId;
-                if (existing) {
-                    ingredientId = existing.id;
-                } else {
-                    const { data: newIngredient, error } = await supabase.from('ingredients').insert({ name }).select('id').single();
-                    if(error) throw error;
-                    ingredientId = newIngredient.id;
-                }
-
-                const { error: linkError } = await supabase.from('recipe_ingredients').insert({ recipe_id: currentEditingRecipeId, ingredient_id: ingredientId, quantity });
-                if(linkError) throw linkError;
-
-                nameInput.value = '';
-                quantityInput.value = '';
-                await loadIngredientsForRecipe(currentEditingRecipeId);
-            } catch(error) {
-                console.error("Error adding ingredient:", error);
-                alert("Could not add ingredient.");
-            }
-        }
-
-        async function handleRemoveIngredient(recipeIngredientId) {
-            const { error } = await supabase.from('recipe_ingredients').delete().eq('id', recipeIngredientId);
-            if(error) { console.error("Error removing ingredient:", error); alert("Could not remove ingredient.");}
-            else { await loadIngredientsForRecipe(currentEditingRecipeId); }
-        }
-
-        async function fetchMealPlan() {
-            const { data, error } = await supabase.from('meal_plan').select('*, recipes(name, servings, id)');
-            if (error) {
-                if (error.code === 'PGRST205') {
-                    document.getElementById('meal-plan-grid').innerHTML = `<div class="md:col-span-8 col-span-1 bg-yellow-900 border border-yellow-700 text-yellow-200 p-4 rounded-lg"><p class="font-bold">Database Table Not Found</p><p>The 'meal_plan' table is missing. Please create it in Supabase with columns: <b>slot_id</b> (text) and <b>recipe_id</b> (int8, foreign key to recipes).</p></div>`;
-                } else { console.error("Error fetching meal plan:", error); }
-                mealPlanCache = null;
-                return;
-            }
-            mealPlanCache = data;
-        }
-
-        function renderMealPlan() {
-            const grid = document.getElementById('meal-plan-grid');
-            if (!grid || mealPlanCache === null) return;
-            grid.innerHTML = '';
-            
-            const headerRow = document.createElement('div');
-            headerRow.className = "contents";
-            headerRow.innerHTML = `<div class="p-1 md:p-2"></div>` + mealTypes.map(type => `<div class="font-bold text-center text-frostedmint p-1 md:p-2 text-xs md:text-xl">${type}</div>`).join('');
-            grid.appendChild(headerRow);
-            
-            daysOfWeek.forEach(day => {
-                const dayRow = document.createElement('div');
-                dayRow.className = "contents";
-                
-                let rowHTML = `<div class="font-bold text-center text-frostedmint p-1 md:p-2 flex items-center justify-center text-xs md:text-xl">
-                    <span class="md:hidden">${day.substring(0, 3)}</span>
-                    <span class="hidden md:block">${day}</span>
-                </div>`;
-                
-                mealTypes.forEach(mealType => {
-                    const slotId = `${day}-${mealType}`;
-                    const planEntry = mealPlanCache.find(p => p.slot_id === slotId);
-                    
-                    const dropHandlers = `ondragover="event.preventDefault()"` ;
-                    
-                    const bgColorClass = planEntry ? 'bg-deepmoss' : 'bg-transparent';
-                    rowHTML += `<div class="meal-slot border border-sand rounded-md p-1 md:p-2 min-h-[80px] md:min-h-[120px] flex flex-col justify-between hover:bg-drysage text-granite placeholder-granite/70/50 transition-colors ${bgColorClass}" ${dropHandlers} data-slot-id="${slotId}">`;
-                    
-                    if (planEntry) {
-                        const servings = planEntry.portions !== null && planEntry.portions !== undefined ? planEntry.portions : planEntry.recipes.servings;
-                        const isDraggable = true;
-                        const draggableAttr = 'draggable="true"';
-                        const cursorClass = 'cursor-grab active:cursor-grabbing';
-                        
-                        const servingsDisplay = servings > 1 ? `<div class="flex justify-center mt-1 md:mt-3"><span class="flex items-center justify-center w-6 h-6 md:w-10 md:h-10 rounded-full bg-drysage text-granite placeholder-granite/70 border border-sand text-[10px] md:text-sm font-bold text-frostedmint shadow-inner">x${servings}</span></div>` : '';
-                        
-                        rowHTML += `<div ${draggableAttr} class="${cursorClass} h-full flex flex-col" data-plan-id="${planEntry.id}" data-recipe-id="${planEntry.recipes.id}" data-current-servings="${servings}">
-                            <div><p class="font-semibold text-frostedmint leading-tight text-center text-[10px] md:text-base">${planEntry.recipes.name}</p>${servingsDisplay}</div>
-                        </div>
-                        <button data-id="${planEntry.id}" class="remove-from-plan-btn text-sand hover:text-darkraspberry self-end mt-[-15px] md:mt-[-20px] relative z-10" title="Remove from plan">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </button>`;
-                    } else {
-                        rowHTML += `<button data-slot-id="${slotId}" class="add-to-plan-btn w-full h-full flex items-center justify-center text-xl md:text-3xl text-drysage hover:text-frostedmint rounded-md">+</button>`;
-                    }
-                    rowHTML += `</div>`;
-                });
-                dayRow.innerHTML = rowHTML;
-                grid.appendChild(dayRow);
-            });
-            
-            addDragListeners();
-        }
-
-        function addDragListeners() {
-            const draggables = document.querySelectorAll('[draggable="true"]');
-            const slots = document.querySelectorAll('.meal-slot');
-
-            draggables.forEach(draggable => {
-                draggable.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', JSON.stringify({
-                        sourcePlanId: draggable.dataset.planId,
-                        recipeId: draggable.dataset.recipeId,
-                        sourceServings: parseInt(draggable.dataset.currentServings)
-                    }));
-                    e.dataTransfer.effectAllowed = 'move';
-                    draggable.style.opacity = '0.5';
-                });
-                
-                draggable.addEventListener('dragend', (e) => {
-                     draggable.style.opacity = '1';
-                });
-            });
-
-            slots.forEach(slot => {
-                slot.addEventListener('drop', async (e) => {
-                    e.preventDefault();
-                    
-                    const data = e.dataTransfer.getData('text/plain');
-                    if (!data) return;
-                    
-                    const { sourcePlanId, recipeId, sourceServings } = JSON.parse(data);
-                    const targetSlotId = slot.dataset.slotId;
-                    
-                    if (!targetSlotId || !sourcePlanId) return;
-
-                    const targetPlanEntry = mealPlanCache.find(p => p.slot_id === targetSlotId);
-
-                    if (targetPlanEntry && targetPlanEntry.id == sourcePlanId) return;
-
-                    let targetAction = null; 
-
-                    if (!targetPlanEntry) {
-                        targetAction = 'create_or_move';
-                    } else if (targetPlanEntry.recipes.id == recipeId) {
-                        targetAction = 'merge';
-                    } else {
-                        return;
-                    }
-
-                    try {
-                        if (sourceServings > 1) {
-                            const { error: updateError } = await supabase.from('meal_plan').update({ portions: sourceServings - 1 }).eq('id', sourcePlanId);
-                            if (updateError) throw updateError;
-
-                            if (targetAction === 'create_or_move') {
-                                const { error: insertError } = await supabase.from('meal_plan').insert([{ slot_id: targetSlotId, recipe_id: recipeId, portions: 1 }]);
-                                if (insertError) throw insertError;
-                            } else {
-                                const currentTargetPortions = targetPlanEntry.portions !== null ? targetPlanEntry.portions : targetPlanEntry.recipes.servings;
-                                const { error: mergeError } = await supabase.from('meal_plan').update({ portions: (currentTargetPortions || 1) + 1 }).eq('id', targetPlanEntry.id);
-                                if (mergeError) throw mergeError;
-                            }
-                        } else {
-                            if (targetAction === 'create_or_move') {
-                                const { error: moveError } = await supabase.from('meal_plan').update({ slot_id: targetSlotId }).eq('id', sourcePlanId);
-                                if (moveError) throw moveError;
-                            } else {
-                                const currentTargetPortions = targetPlanEntry.portions !== null ? targetPlanEntry.portions : targetPlanEntry.recipes.servings;
-                                const { error: mergeError } = await supabase.from('meal_plan').update({ portions: (currentTargetPortions || 1) + 1 }).eq('id', targetPlanEntry.id);
-                                if (mergeError) throw mergeError;
-                                
-                                const { error: deleteError } = await supabase.from('meal_plan').delete().eq('id', sourcePlanId);
-                                if (deleteError) throw deleteError;
-                            }
-                        }
-
-                        await fetchMealPlan();
-                        renderMealPlan();
-
-                    } catch (err) {
-                        console.error("Drag and drop failed:", err);
-                        alert("Failed to move item.");
-                        await fetchMealPlan();
-                        renderMealPlan();
-                    }
-                });
-            });
-        }
-        
-        function openSelectRecipeModal(slotId) {
-            currentMealSlotId = slotId;
-            const list = document.getElementById('selectable-recipes-list');
-            list.innerHTML = '';
-            if (recipesCache.length === 0) { list.innerHTML = '<p class="text-drysage">No recipes to select.</p>'; }
-            recipesCache.forEach(recipe => {
-                const item = document.createElement('button');
-                item.className = 'w-full text-left p-2 rounded-md text-frostedmint hover:bg-drysage hover:text-granite font-medium transition-colors';
-                item.textContent = recipe.name;
-                item.dataset.recipeId = recipe.id;
-                list.appendChild(item);
-            });
-            selectRecipeModal.classList.remove('hidden');
-        }
-
-        function closeSelectRecipeModal() { selectRecipeModal.classList.add('hidden'); }
-
-        async function handleAddToPlan(recipeId) {
-            if (!currentMealSlotId || !recipeId) return;
-            const { error } = await supabase.from('meal_plan').insert([{ slot_id: currentMealSlotId, recipe_id: recipeId }]);
-            if (error) {
-                console.error("Error adding to meal plan:", error);
-                alert("Error: " + error.message);
-            } else {
-                await fetchMealPlan();
-                renderMealPlan();
-                closeSelectRecipeModal();
-            }
-        }
-
-        async function handleRemoveFromPlan(planId) {
-            const { error } = await supabase.from('meal_plan').delete().eq('id', planId);
-            if (error) { console.error("Error removing from plan:", error); } else {
-                await fetchMealPlan();
-                renderMealPlan();
-            }
-        }
-        
-        document.getElementById('open-add-modal-btn').addEventListener('click', openAddModal);
-        document.getElementById('add-recipe-form').addEventListener('submit', handleAddFormSubmit);
-        document.getElementById('cancel-add').addEventListener('click', closeAddModal);
-        document.getElementById('edit-recipe-form').addEventListener('submit', handleEditFormSubmit);
-        document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
-        document.getElementById('add-ingredient-btn').addEventListener('click', handleAddIngredient);
-        document.getElementById('btn-add-ing-to-buffer').addEventListener('click', addToIngredientBuffer);
-        
-        document.getElementById('cancel-delete').addEventListener('click', closeDeleteConfirmModal);
-        document.getElementById('confirm-delete-btn').addEventListener('click', handleConfirmDelete);
-        document.getElementById('generate-shopping-btn').addEventListener('click', generateShoppingList);
-        document.getElementById('clear-plan-btn').addEventListener('click', handleClearMealPlan);
-
-        document.getElementById('add-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'add-image-base64', 'add-image-preview-container', 'add-image-preview'));
-        document.getElementById('edit-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview'));
-        document.getElementById('add-generate-btn').addEventListener('click', () => handleGenerateImage('add-name', 'add-instructions', 'add-image-base64', 'add-image-preview-container', 'add-image-preview', 'add-generate-btn'));
-        document.getElementById('edit-generate-btn').addEventListener('click', () => handleGenerateImage('edit-name', 'edit-instructions', 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview', 'edit-generate-btn'));
-        document.getElementById('add-remove-image').addEventListener('click', () => handleRemoveImage('add-image-base64', 'add-image-preview-container', 'add-image-input'));
-        document.getElementById('edit-remove-image').addEventListener('click', () => handleRemoveImage('edit-image-base64', 'edit-image-preview-container', 'edit-image-input'));
-
-        async function handleClearMealPlan() {
-            if (!confirm("Are you sure you want to clear the entire meal plan for this week?")) return;
-            
-            const { error } = await supabase.from('meal_plan').delete().neq('id', 0); // Delete all rows
-            if (error) {
-                console.error("Error clearing meal plan:", error);
-                alert("Could not clear meal plan.");
-            } else {
-                await fetchMealPlan();
-                renderMealPlan();
-            }
-        }
-
-        recipesListContainer.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.edit-btn');
-            const deleteBtn = e.target.closest('.delete-btn');
-            if (editBtn) {
-                const recipe = recipesCache.find(r => r.id == editBtn.dataset.id);
-                if(recipe) openEditModal(recipe);
-            } else if (deleteBtn) {
-                const recipe = recipesCache.find(r => r.id == deleteBtn.dataset.id);
-                if (recipe) openDeleteConfirmModal(recipe.id, recipe.name);
-            }
-        });
-        
-        document.getElementById('ingredients-list').addEventListener('click', (e) => {
-             if (e.target.closest('.remove-ingredient-btn')) {
-                handleRemoveIngredient(e.target.closest('.remove-ingredient-btn').dataset.id);
-            }
-        });
-
-        document.getElementById('meal-plan-grid').addEventListener('click', (e) => {
-            const addBtn = e.target.closest('.add-to-plan-btn');
-            const removeBtn = e.target.closest('.remove-from-plan-btn');
-            
-            const mealSlotContent = e.target.closest('[data-recipe-id]');
-            
-            if (addBtn) { 
-                openSelectRecipeModal(addBtn.dataset.slotId); 
-            } else if (removeBtn) { 
-                handleRemoveFromPlan(removeBtn.dataset.id); 
-            } else if (mealSlotContent) {
-                openViewModal(mealSlotContent.dataset.recipeId);
-            }
-        });
-
-        document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
-        document.getElementById('selectable-recipes-list').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && e.target.dataset.recipeId) {
-                handleAddToPlan(e.target.dataset.recipeId);
-            }
-        });
-        
-        async function generateShoppingList() {
-            if (!mealPlanCache || mealPlanCache.length === 0) {
-                alert("Your meal plan is empty!");
-                return;
-            }
-
-            const shoppingMap = new Map(); 
-
-            const recipeIds = [...new Set(mealPlanCache.map(p => p.recipes.id))];
-
-            const { data: allIngredients, error } = await supabase
-                .from('recipe_ingredients')
-                .select('recipe_id, quantity, ingredients(name)')
-                .in('recipe_id', recipeIds);
-
-            if (error) {
-                console.error("Error fetching ingredients for shopping list:", error);
-                alert("Could not generate list.");
-                return;
-            }
-
-            mealPlanCache.forEach(planEntry => {
-                const portions = planEntry.portions || planEntry.recipes.servings || 1;
-                const originalServings = planEntry.recipes.servings || 1;
-                const ratio = portions / originalServings;
-
-                const entryIngredients = allIngredients.filter(ri => ri.recipe_id === planEntry.recipes.id);
-                
-                entryIngredients.forEach(ing => {
-                    const name = ing.ingredients.name;
-                    const amount = ing.quantity * ratio;
-                    
-                    if (shoppingMap.has(name)) {
-                        shoppingMap.set(name, shoppingMap.get(name) + amount);
-                    } else {
-                        shoppingMap.set(name, amount);
-                    }
-                });
-            });
-
-            lastGeneratedShoppingMap = shoppingMap;
-            renderShoppingList(shoppingMap);
-            
-            document.getElementById('nav-shopping').click();
-        }
-
-        function renderShoppingList(shoppingMap = lastGeneratedShoppingMap) {
-            const container = document.getElementById('shopping-list-container');
-            container.innerHTML = '';
-            
-            if (shoppingMap.size === 0 && manualShoppingItems.length === 0) {
-                container.innerHTML = '<p class="text-drysage">No ingredients found.</p>';
-                return;
-            }
-
-            const sortedIngredients = Array.from(shoppingMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-            sortedIngredients.forEach(([name, quantity]) => {
-                const formattedQuantity = parseFloat(quantity.toFixed(2));
-                appendShoppingItem(name, formattedQuantity, false);
-            });
-
-            if (manualShoppingItems.length > 0) {
-                if (shoppingMap.size > 0) {
-                    const divider = document.createElement('div');
-                    divider.className = "border-t border-sand my-2";
-                    container.appendChild(divider);
-                }
-                manualShoppingItems.forEach(item => {
-                    appendShoppingItem(item, null, true);
-                });
-            }
-        }
-
-        function appendShoppingItem(name, quantity, isManual) {
-            const container = document.getElementById('shopping-list-container');
-            const el = document.createElement('div');
-            el.className = 'flex items-center p-3 bg-granite border border-sand rounded-lg hover:bg-drysage/10 transition-colors cursor-pointer mb-2';
-            
-            el.onclick = (e) => {
-                if (e.target.type !== 'checkbox' && e.target.tagName !== 'BUTTON') {
-                    const cb = el.querySelector('input[type="checkbox"]');
-                    cb.checked = !cb.checked;
-                    cb.dispatchEvent(new Event('change'));
-                }
-            };
-
-            const quantityHTML = quantity !== null ? `<span class="ml-auto font-mono text-sand font-bold">${quantity}</span>` : '<span class="ml-auto text-drysage text-sm">Manual</span>';
-            const deleteBtn = isManual ? `<button class="ml-2 text-drysage hover:text-darkraspberry delete-manual-item">×</button>` : '';
-
-            el.innerHTML = `
-                <input type="checkbox" class="w-5 h-5 rounded border-sand text-sand focus:ring-sand bg-granite">
-                <span class="ml-3 text-frostedmint text-lg select-none">${name}</span>
-                ${quantityHTML}
-                ${deleteBtn}
-            `;
-            
-            const checkbox = el.querySelector('input');
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) {
-                    el.querySelector('span.text-frostedmint').classList.add('line-through', 'text-drysage');
-                    el.querySelector('span.text-frostedmint').classList.remove('text-frostedmint');
-                } else {
-                    el.querySelector('span.line-through').classList.add('text-frostedmint');
-                    el.querySelector('span.line-through').classList.remove('line-through', 'text-drysage');
-                }
-            });
-            
-            if (isManual) {
-                el.querySelector('.delete-manual-item').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    removeManualItem(name);
-                });
-            }
-
-            container.appendChild(el);
-        }
-
         function handleAddManualItem(e) {
             e.preventDefault();
             const input = e.target.querySelector('input[name="item_name"]');
@@ -1254,6 +961,20 @@
             renderShoppingList();
         }
 
+        async function handleClearMealPlan() {
+            if (!confirm("Are you sure you want to clear the entire meal plan for this week?")) return;
+            
+            const { error } = await supabase.from('meal_plan').delete().neq('id', 0); 
+            if (error) {
+                console.error("Error clearing meal plan:", error);
+                alert("Could not clear meal plan.");
+            } else {
+                await fetchMealPlan();
+                renderMealPlan();
+            }
+        }
+
+        // --- DRAG SCROLL ---
         let isDown = false;
         let startX;
         let scrollLeft;
@@ -1315,13 +1036,12 @@
             }
         }
 
+        // Initialize
         initApp();
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registered', reg))
-                    .catch(err => console.error('Service Worker registration failed', err));
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
             });
         }
     </script>
