@@ -30,7 +30,6 @@
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: #2A3327;
-            /* Clearer Fern Pattern with higher opacity */
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 60 L30 0 M30 50 L55 40 M30 50 L5 40 M30 35 L55 25 M30 35 L5 25 M30 20 L55 10 M30 20 L5 10' stroke='%233F4B3B' stroke-width='2' stroke-linecap='round' fill='none' opacity='0.4'/%3E%3C/svg%3E");
             background-size: 60px 60px;
             background-attachment: fixed;
@@ -38,15 +37,8 @@
         .font-serif { font-family: 'Bree Serif', serif; }
         .font-pacifico { font-family: 'Pacifico', cursive; }
         .modal.hidden, .page.hidden { display: none; }
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .scrollbar-hide {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="text-frostedmint">
@@ -123,8 +115,9 @@
     </div>
     
     <!-- MODALS -->
+    <!-- Add Modal -->
     <div id="add-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4">
-        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-3xl border border-sand">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-3xl border border-sand overflow-y-auto max-h-[90vh]">
             <h2 class="text-2xl font-semibold text-frostedmint mb-4">Add a New Recipe</h2>
             <form id="add-recipe-form" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                 <div class="sm:col-span-2"><label for="add-name" class="block text-sm font-medium text-drysage">Recipe Name</label><input type="text" name="name" id="add-name" required class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-frostedmint shadow-sm focus:border-sand focus:ring-sand"></div>
@@ -176,6 +169,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Modal -->
     <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-start justify-center p-4 overflow-y-auto">
          <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-3xl my-auto border border-sand">
             <h2 class="text-2xl font-semibold text-frostedmint mb-4 font-serif">Edit Recipe</h2>
@@ -212,25 +207,8 @@
             <div class="mt-8 flex justify-end gap-4"><button type="button" id="cancel-edit" class="rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button><button type="submit" form="edit-recipe-form" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Save Changes</button></div>
         </div>
     </div>
-    <div id="select-recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-md border border-sand">
-            <h2 class="text-xl font-semibold text-frostedmint mb-4">Select a Recipe</h2>
-            <div id="selectable-recipes-list" class="space-y-2 max-h-96 overflow-y-auto"></div>
-            <button id="cancel-select-recipe" class="mt-4 w-full rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button>
-        </div>
-    </div>
-    <div id="delete-confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4">
-        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-md border border-sand">
-            <h2 class="text-xl font-semibold text-frostedmint mb-2">Delete Recipe</h2>
-            <p class="text-drysage mb-6">Are you sure you want to delete <span id="delete-recipe-name" class="font-bold text-frostedmint"></span>? This action cannot be undone.</p>
-            <div class="flex justify-end gap-4">
-                <button id="cancel-delete" class="rounded-md border border-sand bg-slate-600 py-2 px-4 text-sm font-medium text-frostedmint hover:bg-slate-500">Cancel</button>
-                <button id="confirm-delete-btn" class="rounded-md border border-transparent bg-darkraspberry py-2 px-4 text-sm font-medium text-frostedmint hover:opacity-90">Delete</button>
-            </div>
-        </div>
-    </div>
 
-
+    <!-- View Modal -->
     <div id="view-recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-start justify-center p-4 overflow-y-auto z-50">
         <div class="bg-granite border border-sand rounded-2xl shadow-xl w-full max-w-3xl my-auto border border-sand overflow-hidden">
             <div id="view-recipe-header" class="relative h-64 w-full bg-drysage">
@@ -312,6 +290,7 @@
         </div>
     </div>
 
+    <!-- SCRIPTS -->
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
@@ -323,27 +302,260 @@
         let recipeToDeleteId = null;
         let lastGeneratedShoppingMap = new Map();
         let manualShoppingItems = [];
-        // Buffer for new recipe ingredients
         let newIngredientsBuffer = [];
 
         // UI Refs
         const navButtons = document.querySelectorAll('.nav-btn');
-        // ... (rest of UI Refs)
+        const pages = document.querySelectorAll('.page');
+        const addModal = document.getElementById('add-modal');
+        const editModal = document.getElementById('edit-modal');
+        const selectRecipeModal = document.getElementById('select-recipe-modal');
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const settingsModal = document.getElementById('settings-modal');
+        const recipesListContainer = document.getElementById('recipes-list');
+        const viewRecipeModal = document.getElementById('view-recipe-modal');
 
-        // ...
+        function getStoredConfig() {
+            return {
+                url: localStorage.getItem('supabase_url'),
+                key: localStorage.getItem('supabase_key')
+            };
+        }
+
+        async function initApp() {
+            const config = getStoredConfig();
+            
+            if (!config.url || !config.key) {
+                openSettings(true); 
+                return;
+            }
+
+            try {
+                supabase = createClient(config.url, config.key);
+                
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error || !session) {
+                    console.log("No active session, prompting login.");
+                    openSettings(true); 
+                    return;
+                }
+
+                await Promise.all([fetchRecipes(), fetchMealPlan()]);
+                renderRecipes();
+                renderMealPlan();
+                settingsModal.classList.add('hidden');
+
+            } catch (e) {
+                console.error("Initialization failed", e);
+                document.getElementById('auth-error').textContent = "Connection failed. Check keys.";
+                document.getElementById('auth-error').classList.remove('hidden');
+                openSettings(true);
+            }
+        }
+
+        function openSettings(force = false) {
+            const config = getStoredConfig();
+            document.getElementById('setting-url').value = config.url || '';
+            document.getElementById('setting-key').value = config.key || '';
+            
+            const cancelBtn = document.getElementById('cancel-settings');
+            if (force) {
+                cancelBtn.classList.add('hidden');
+            } else {
+                cancelBtn.classList.remove('hidden');
+            }
+            settingsModal.classList.remove('hidden');
+        }
+
+        function saveConfig() {
+            const formData = new FormData(document.getElementById('settings-form'));
+            const url = formData.get('supabase_url').trim();
+            const key = formData.get('supabase_key').trim();
+            if(url && key) {
+                localStorage.setItem('supabase_url', url);
+                localStorage.setItem('supabase_key', key);
+                supabase = createClient(url, key);
+            }
+            return { email: formData.get('email'), password: formData.get('password') };
+        }
+
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { email, password } = saveConfig();
+            const errorDiv = document.getElementById('auth-error');
+            
+            if (!email || !password) {
+                errorDiv.textContent = "Please enter email and password.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+            btn.textContent = "Logging in...";
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = "Log In";
+            } else {
+                location.reload(); 
+            }
+        });
+
+        document.getElementById('btn-signup').addEventListener('click', async () => {
+            const { email, password } = saveConfig();
+            const errorDiv = document.getElementById('auth-error');
+
+            if (!email || !password) {
+                errorDiv.textContent = "Please enter email and password.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            
+            if (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } else {
+                alert("Sign up successful! You are now logged in.");
+                location.reload();
+            }
+        });
+
+        document.getElementById('open-settings-btn').addEventListener('click', () => openSettings(false));
+        document.getElementById('cancel-settings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetPageId = `page-${btn.id.split('-')[1]}`;
+                pages.forEach(p => p.classList.add('hidden'));
+                document.getElementById(targetPageId).classList.remove('hidden');
+                navButtons.forEach(b => { 
+                    b.classList.remove('bg-sand', 'text-granite'); 
+                    b.classList.add('text-frostedmint', 'hover:text-drysage'); 
+                });
+                btn.classList.add('bg-sand', 'text-frostedmint');
+                btn.classList.remove('text-frostedmint', 'hover:text-drysage');
+            });
+        });
+
+        async function fetchRecipes() {
+            const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: false });
+            if (error) { console.error("Error fetching recipes:", error); return; }
+            recipesCache = data;
+        }
+
+        const readFileAsBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
 
         function renderRecipes() {
-            // ... (existing renderRecipes code)
+            recipesListContainer.innerHTML = '';
+            if (recipesCache.length === 0) { recipesListContainer.innerHTML = '<p class="text-drysage">No recipes found.</p>'; return; }
+            recipesCache.forEach(recipe => {
+                const el = document.createElement('div');
+                el.className = 'flex-none w-72 bg-deepmoss border border-sand rounded-xl overflow-hidden shadow-lg flex flex-col snap-start transition-transform hover:scale-[1.01] cursor-pointer group';
+                
+                el.onclick = (e) => {
+                    if (!e.target.closest('button')) {
+                        openViewModal(recipe.id);
+                    }
+                };
+
+                const imgDisplay = recipe.image_url 
+                    ? `<img src="${recipe.image_url}" alt="${recipe.name}" class="h-48 w-full object-cover bg-drysage select-none pointer-events-none group-hover:opacity-90 transition-opacity">`
+                    : `<div class="h-48 w-full bg-drysage flex items-center justify-center text-granite/50 select-none"><span class="font-serif italic text-lg">No Image</span></div>`;
+
+                const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
+                const timeDisplay = totalTime > 0 ? `${totalTime} mins` : 'N/A';
+
+                el.innerHTML = `
+                    ${imgDisplay}
+                    <div class="p-4 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold text-xl text-frostedmint font-serif leading-tight">${recipe.name}</h3>
+                        </div>
+                        <div class="flex justify-between text-sm text-sand mb-4">
+                            <span>Servings: ${recipe.servings || 'N/A'}</span>
+                            <span>Time: ${timeDisplay}</span>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-auto pt-3 border-t border-sand/30">
+                            <button data-id="${recipe.id}" class="edit-btn text-drysage hover:text-sand p-1 z-10" title="Edit Recipe">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                            </button>
+                            <button data-id="${recipe.id}" class="delete-btn text-drysage hover:text-darkraspberry p-1 z-10" title="Delete Recipe">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            </button>
+                        </div>
+                    </div>`;
+                recipesListContainer.appendChild(el);
+            });
         }
+
+        async function openViewModal(recipeId) {
+            const recipe = recipesCache.find(r => r.id == recipeId);
+            if (!recipe) return;
+
+            document.getElementById('view-recipe-name').textContent = recipe.name;
+            const img = document.getElementById('view-recipe-image');
+            if (recipe.image_url) {
+                img.src = recipe.image_url;
+                img.classList.remove('hidden');
+            } else {
+                img.src = ''; 
+                img.classList.add('hidden'); 
+            }
+            
+            document.getElementById('view-prep-time').textContent = recipe.prep_time ? `${recipe.prep_time} mins` : '-';
+            document.getElementById('view-cook-time').textContent = recipe.cook_time ? `${recipe.cook_time} mins` : '-';
+            const total = (recipe.prep_time || 0) + (recipe.cook_time || 0);
+            document.getElementById('view-total-time').textContent = total > 0 ? `${total} mins` : '-';
+            document.getElementById('view-servings').textContent = recipe.servings || '-';
+            document.getElementById('view-instructions').textContent = recipe.instructions || 'No instructions provided.';
+
+            const list = document.getElementById('view-ingredients-list');
+            list.innerHTML = '<li class="text-drysage italic">Loading ingredients...</li>';
+            
+            const { data: ingredients, error } = await supabase.from('recipe_ingredients').select('quantity, ingredients(name)').eq('recipe_id', recipe.id);
+            
+            list.innerHTML = '';
+            if (error || !ingredients || ingredients.length === 0) {
+                list.innerHTML = '<li class="text-drysage italic">No ingredients found.</li>';
+            } else {
+                ingredients.forEach(i => {
+                    const li = document.createElement('li');
+                    li.className = "flex justify-between border-b border-sand/20 pb-1";
+                    li.innerHTML = `<span>${i.ingredients.name}</span> <span class="text-drysage">${i.quantity}</span>`;
+                    list.appendChild(li);
+                });
+            }
+
+            viewRecipeModal.classList.remove('hidden');
+        }
+
+        document.getElementById('close-view-modal').addEventListener('click', () => {
+            viewRecipeModal.classList.add('hidden');
+        });
 
         function openAddModal() { 
             addModal.classList.remove('hidden'); 
-            // Reset image state
             document.getElementById('add-image-input').value = '';
             document.getElementById('add-image-base64').value = '';
             document.getElementById('add-image-preview-container').classList.add('hidden');
             
-            // Reset Ingredients Buffer
             newIngredientsBuffer = [];
             renderNewIngredientsBuffer();
             document.getElementById('add-ing-name').value = '';
@@ -351,7 +563,6 @@
         }
         function closeAddModal() { document.getElementById('add-recipe-form').reset(); addModal.classList.add('hidden'); }
 
-        // --- NEW INGREDIENT BUFFER LOGIC ---
         function renderNewIngredientsBuffer() {
             const list = document.getElementById('add-ingredients-list');
             list.innerHTML = '';
@@ -371,7 +582,6 @@
                 list.appendChild(el);
             });
             
-            // Attach listeners to dynamic buttons
             list.querySelectorAll('.remove-buffer-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const idx = parseInt(e.currentTarget.dataset.index);
@@ -403,14 +613,10 @@
             renderNewIngredientsBuffer();
         }
 
-        document.getElementById('btn-add-ing-to-buffer').addEventListener('click', addToIngredientBuffer);
-
-
         async function handleAddFormSubmit(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
             
-            // Get base64 from hidden input (populated by file input or AI)
             const imageBase64 = document.getElementById('add-image-base64').value || null;
 
             const newRecipe = { 
@@ -423,28 +629,23 @@
             };
             
             try {
-                // 1. Insert Recipe
                 const { data: recipeData, error: recipeError } = await supabase.from('recipes').insert([newRecipe]).select().single();
                 if (recipeError) throw recipeError;
                 
                 const newRecipeId = recipeData.id;
 
-                // 2. Process Ingredients Buffer
                 for (const item of newIngredientsBuffer) {
-                    // Check if ingredient exists
                     let { data: existingIng } = await supabase.from('ingredients').select('id').eq('name', item.name).single();
                     let ingredientId;
 
                     if (existingIng) {
                         ingredientId = existingIng.id;
                     } else {
-                        // Create new ingredient
                         const { data: newIng, error: ingError } = await supabase.from('ingredients').insert({ name: item.name }).select('id').single();
                         if (ingError) throw ingError;
                         ingredientId = newIng.id;
                     }
 
-                    // Link to Recipe
                     const { error: linkError } = await supabase.from('recipe_ingredients').insert({
                         recipe_id: newRecipeId,
                         ingredient_id: ingredientId,
@@ -472,12 +673,11 @@
             document.getElementById('edit-servings').value = recipe.servings;
             document.getElementById('edit-instructions').value = recipe.instructions;
             
-            // Image State
             const hiddenInput = document.getElementById('edit-image-base64');
             const previewContainer = document.getElementById('edit-image-preview-container');
             const previewImg = document.getElementById('edit-image-preview');
             
-            document.getElementById('edit-image-input').value = ''; // Reset file input
+            document.getElementById('edit-image-input').value = ''; 
             
             if (recipe.image_url) {
                 hiddenInput.value = recipe.image_url;
@@ -518,12 +718,9 @@
             }
         }
 
-        // --- IMAGE HANDLING UTILS ---
-        
         async function handleImageFileSelect(e, hiddenInputId, previewContainerId, previewImgId) {
             const file = e.target.files[0];
             if (!file) return;
-            
             try {
                 const base64 = await readFileAsBase64(file);
                 document.getElementById(hiddenInputId).value = base64;
@@ -549,18 +746,14 @@
             btn.textContent = "Generating...";
             btn.disabled = true;
 
-            // Simple prompt engineering
             const prompt = `Professional food photography of ${name}, ${instructions.substring(0, 50)}... appetizing, high resolution, 4k`;
             const encodedPrompt = encodeURIComponent(prompt);
             const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true`;
 
             try {
-                // Fetch image as blob
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Generation failed");
                 const blob = await response.blob();
-                
-                // Convert to base64
                 const base64 = await readFileAsBase64(blob);
                 
                 document.getElementById(hiddenInputId).value = base64;
@@ -581,16 +774,6 @@
             document.getElementById(previewContainerId).classList.add('hidden');
             if(fileInputId) document.getElementById(fileInputId).value = '';
         }
-
-        // Listeners for Image Controls
-        document.getElementById('add-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'add-image-base64', 'add-image-preview-container', 'add-image-preview'));
-        document.getElementById('edit-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview'));
-        
-        document.getElementById('add-generate-btn').addEventListener('click', () => handleGenerateImage('add-name', 'add-instructions', 'add-image-base64', 'add-image-preview-container', 'add-image-preview', 'add-generate-btn'));
-        document.getElementById('edit-generate-btn').addEventListener('click', () => handleGenerateImage('edit-name', 'edit-instructions', 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview', 'edit-generate-btn'));
-
-        document.getElementById('add-remove-image').addEventListener('click', () => handleRemoveImage('add-image-base64', 'add-image-preview-container', 'add-image-input'));
-        document.getElementById('edit-remove-image').addEventListener('click', () => handleRemoveImage('edit-image-base64', 'edit-image-preview-container', 'edit-image-input'));
 
         function openDeleteConfirmModal(recipeId, recipeName) {
             recipeToDeleteId = recipeId;
@@ -613,7 +796,6 @@
             }
         }
 
-        // --- INGREDIENT LOGIC ---
         async function loadIngredientsForRecipe(recipeId) {
             const list = document.getElementById('ingredients-list');
             list.innerHTML = `<p class="text-drysage">Loading...</p>`;
@@ -674,10 +856,6 @@
             else { await loadIngredientsForRecipe(currentEditingRecipeId); }
         }
 
-        // --- MEAL PLANNER LOGIC ---
-        const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        const mealTypes = ["Breakfast", "Lunch", "Dinner"];
-
         async function fetchMealPlan() {
             const { data, error } = await supabase.from('meal_plan').select('*, recipes(name, servings, id)');
             if (error) {
@@ -695,19 +873,15 @@
             if (!grid || mealPlanCache === null) return;
             grid.innerHTML = '';
             
-            // Header Row: Label + Meal Types
             const headerRow = document.createElement('div');
             headerRow.className = "contents";
-            // Responsive headers: smaller text on mobile
             headerRow.innerHTML = `<div class="p-1 md:p-2"></div>` + mealTypes.map(type => `<div class="font-bold text-center text-frostedmint p-1 md:p-2 text-xs md:text-xl">${type}</div>`).join('');
             grid.appendChild(headerRow);
             
-            // Rows: Days
             daysOfWeek.forEach(day => {
                 const dayRow = document.createElement('div');
                 dayRow.className = "contents";
                 
-                // Row Label (Day Name) - Shortened on mobile
                 let rowHTML = `<div class="font-bold text-center text-frostedmint p-1 md:p-2 flex items-center justify-center text-xs md:text-xl">
                     <span class="md:hidden">${day.substring(0, 3)}</span>
                     <span class="hidden md:block">${day}</span>
@@ -719,7 +893,6 @@
                     
                     const dropHandlers = `ondragover="event.preventDefault()"` ;
                     
-                    // Reduced padding on mobile (p-1 vs p-2)
                     const bgColorClass = planEntry ? 'bg-deepmoss' : 'bg-transparent';
                     rowHTML += `<div class="meal-slot border border-sand rounded-md p-1 md:p-2 min-h-[80px] md:min-h-[120px] flex flex-col justify-between hover:bg-drysage text-granite placeholder-granite/70/50 transition-colors ${bgColorClass}" ${dropHandlers} data-slot-id="${slotId}">`;
                     
@@ -729,7 +902,6 @@
                         const draggableAttr = 'draggable="true"';
                         const cursorClass = 'cursor-grab active:cursor-grabbing';
                         
-                        // Smaller badge on mobile
                         const servingsDisplay = servings > 1 ? `<div class="flex justify-center mt-1 md:mt-3"><span class="flex items-center justify-center w-6 h-6 md:w-10 md:h-10 rounded-full bg-drysage text-granite placeholder-granite/70 border border-sand text-[10px] md:text-sm font-bold text-frostedmint shadow-inner">x${servings}</span></div>` : '';
                         
                         rowHTML += `<div ${draggableAttr} class="${cursorClass} h-full flex flex-col" data-plan-id="${planEntry.id}" data-recipe-id="${planEntry.recipes.id}" data-current-servings="${servings}">
@@ -749,7 +921,6 @@
                 grid.appendChild(dayRow);
             });
             
-            // Re-attach listeners for dynamic elements
             addDragListeners();
         }
 
@@ -785,10 +956,8 @@
                     
                     if (!targetSlotId || !sourcePlanId) return;
 
-                    // Check content of target slot
                     const targetPlanEntry = mealPlanCache.find(p => p.slot_id === targetSlotId);
 
-                    // Prevent dropping on self
                     if (targetPlanEntry && targetPlanEntry.id == sourcePlanId) return;
 
                     let targetAction = null; 
@@ -798,12 +967,11 @@
                     } else if (targetPlanEntry.recipes.id == recipeId) {
                         targetAction = 'merge';
                     } else {
-                        return; // Different recipe, ignore
+                        return;
                     }
 
                     try {
                         if (sourceServings > 1) {
-                            // SPLIT: Decrement source, increment/create target
                             const { error: updateError } = await supabase.from('meal_plan').update({ portions: sourceServings - 1 }).eq('id', sourcePlanId);
                             if (updateError) throw updateError;
 
@@ -816,7 +984,6 @@
                                 if (mergeError) throw mergeError;
                             }
                         } else {
-                            // MOVE: Move or Merge-and-Delete source
                             if (targetAction === 'create_or_move') {
                                 const { error: moveError } = await supabase.from('meal_plan').update({ slot_id: targetSlotId }).eq('id', sourcePlanId);
                                 if (moveError) throw moveError;
@@ -881,18 +1048,25 @@
             }
         }
         
-        // --- EVENT LISTENERS ---
         document.getElementById('open-add-modal-btn').addEventListener('click', openAddModal);
         document.getElementById('add-recipe-form').addEventListener('submit', handleAddFormSubmit);
         document.getElementById('cancel-add').addEventListener('click', closeAddModal);
         document.getElementById('edit-recipe-form').addEventListener('submit', handleEditFormSubmit);
         document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
         document.getElementById('add-ingredient-btn').addEventListener('click', handleAddIngredient);
+        document.getElementById('btn-add-ing-to-buffer').addEventListener('click', addToIngredientBuffer);
         
         document.getElementById('cancel-delete').addEventListener('click', closeDeleteConfirmModal);
         document.getElementById('confirm-delete-btn').addEventListener('click', handleConfirmDelete);
         document.getElementById('generate-shopping-btn').addEventListener('click', generateShoppingList);
         document.getElementById('clear-plan-btn').addEventListener('click', handleClearMealPlan);
+
+        document.getElementById('add-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'add-image-base64', 'add-image-preview-container', 'add-image-preview'));
+        document.getElementById('edit-image-input').addEventListener('change', (e) => handleImageFileSelect(e, 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview'));
+        document.getElementById('add-generate-btn').addEventListener('click', () => handleGenerateImage('add-name', 'add-instructions', 'add-image-base64', 'add-image-preview-container', 'add-image-preview', 'add-generate-btn'));
+        document.getElementById('edit-generate-btn').addEventListener('click', () => handleGenerateImage('edit-name', 'edit-instructions', 'edit-image-base64', 'edit-image-preview-container', 'edit-image-preview', 'edit-generate-btn'));
+        document.getElementById('add-remove-image').addEventListener('click', () => handleRemoveImage('add-image-base64', 'add-image-preview-container', 'add-image-input'));
+        document.getElementById('edit-remove-image').addEventListener('click', () => handleRemoveImage('edit-image-base64', 'edit-image-preview-container', 'edit-image-input'));
 
         async function handleClearMealPlan() {
             if (!confirm("Are you sure you want to clear the entire meal plan for this week?")) return;
@@ -913,8 +1087,7 @@
             if (editBtn) {
                 const recipe = recipesCache.find(r => r.id == editBtn.dataset.id);
                 if(recipe) openEditModal(recipe);
-            }
-            if (deleteBtn) {
+            } else if (deleteBtn) {
                 const recipe = recipesCache.find(r => r.id == deleteBtn.dataset.id);
                 if (recipe) openDeleteConfirmModal(recipe.id, recipe.name);
             }
@@ -925,20 +1098,39 @@
                 handleRemoveIngredient(e.target.closest('.remove-ingredient-btn').dataset.id);
             }
         });
+
+        document.getElementById('meal-plan-grid').addEventListener('click', (e) => {
+            const addBtn = e.target.closest('.add-to-plan-btn');
+            const removeBtn = e.target.closest('.remove-from-plan-btn');
+            
+            const mealSlotContent = e.target.closest('[data-recipe-id]');
+            
+            if (addBtn) { 
+                openSelectRecipeModal(addBtn.dataset.slotId); 
+            } else if (removeBtn) { 
+                handleRemoveFromPlan(removeBtn.dataset.id); 
+            } else if (mealSlotContent) {
+                openViewModal(mealSlotContent.dataset.recipeId);
+            }
+        });
+
+        document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
+        document.getElementById('selectable-recipes-list').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.recipeId) {
+                handleAddToPlan(e.target.dataset.recipeId);
+            }
+        });
         
-        // --- SHOPPING LIST LOGIC ---
         async function generateShoppingList() {
             if (!mealPlanCache || mealPlanCache.length === 0) {
                 alert("Your meal plan is empty!");
                 return;
             }
 
-            const shoppingMap = new Map(); // Name -> { quantity, unit (implied) }
+            const shoppingMap = new Map(); 
 
-            // 1. Get all recipe IDs from the meal plan
             const recipeIds = [...new Set(mealPlanCache.map(p => p.recipes.id))];
 
-            // 2. Fetch ingredients for ALL these recipes in one go
             const { data: allIngredients, error } = await supabase
                 .from('recipe_ingredients')
                 .select('recipe_id, quantity, ingredients(name)')
@@ -950,7 +1142,6 @@
                 return;
             }
 
-            // 3. Aggregate
             mealPlanCache.forEach(planEntry => {
                 const portions = planEntry.portions || planEntry.recipes.servings || 1;
                 const originalServings = planEntry.recipes.servings || 1;
@@ -973,7 +1164,6 @@
             lastGeneratedShoppingMap = shoppingMap;
             renderShoppingList(shoppingMap);
             
-            // Navigate to shopping page
             document.getElementById('nav-shopping').click();
         }
 
@@ -986,16 +1176,13 @@
                 return;
             }
 
-            // Generated Items
             const sortedIngredients = Array.from(shoppingMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
             sortedIngredients.forEach(([name, quantity]) => {
                 const formattedQuantity = parseFloat(quantity.toFixed(2));
                 appendShoppingItem(name, formattedQuantity, false);
             });
 
-            // Manual Items
             if (manualShoppingItems.length > 0) {
-                // Optional divider if we have both
                 if (shoppingMap.size > 0) {
                     const divider = document.createElement('div');
                     divider.className = "border-t border-sand my-2";
@@ -1058,11 +1245,6 @@
             if (name) {
                 manualShoppingItems.push(name);
                 input.value = '';
-                // Optimistically append to avoid full re-render (which kills check state)
-                // Actually, renderShoppingList redraws everything, killing check state.
-                // For a proper app we need state for checks. For this prototype, re-render is safer for order, 
-                // but annoying. Let's just append to DOM if we can, but we need to handle the "Empty" state removal.
-                // Simplest: just call render. The user just added an item, they probably haven't checked much yet.
                 renderShoppingList();
             }
         }
@@ -1072,33 +1254,6 @@
             renderShoppingList();
         }
 
-        document.getElementById('add-shopping-item-form').addEventListener('submit', handleAddManualItem);
-
-        document.getElementById('meal-plan-grid').addEventListener('click', (e) => {
-            const addBtn = e.target.closest('.add-to-plan-btn');
-            const removeBtn = e.target.closest('.remove-from-plan-btn');
-            
-            // Check for clicking on a filled meal slot to view details
-            const mealSlotContent = e.target.closest('[data-recipe-id]');
-            
-            if (addBtn) { 
-                openSelectRecipeModal(addBtn.dataset.slotId); 
-            } else if (removeBtn) { 
-                handleRemoveFromPlan(removeBtn.dataset.id); 
-            } else if (mealSlotContent) {
-                // If we clicked the content (and not the remove button which is handled above)
-                openViewModal(mealSlotContent.dataset.recipeId);
-            }
-        });
-
-        document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
-        document.getElementById('selectable-recipes-list').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && e.target.dataset.recipeId) {
-                handleAddToPlan(e.target.dataset.recipeId);
-            }
-        });
-
-        // --- DRAG SCROLL LOGIC ---
         let isDown = false;
         let startX;
         let scrollLeft;
@@ -1111,7 +1266,7 @@
             isDown = true;
             recipesListContainer.classList.add('cursor-grabbing');
             recipesListContainer.classList.remove('cursor-grab');
-            recipesListContainer.style.scrollSnapType = 'none'; // Disable snapping while dragging
+            recipesListContainer.style.scrollSnapType = 'none'; 
             startX = e.pageX - recipesListContainer.offsetLeft;
             scrollLeft = recipesListContainer.scrollLeft;
             lastMouseX = e.pageX;
@@ -1143,7 +1298,6 @@
             const walk = (x - startX);
             recipesListContainer.scrollLeft = scrollLeft - walk;
             
-            // Calculate velocity
             velX = e.pageX - lastMouseX;
             lastMouseX = e.pageX;
         });
@@ -1173,5 +1327,3 @@
     </script>
 </body>
 </html>
-
-
