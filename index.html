@@ -290,6 +290,31 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-sm border border-sand">
+            <h3 class="text-xl font-semibold text-frostedmint mb-2 font-serif">Delete Recipe?</h3>
+            <p class="text-drysage mb-6">Are you sure you want to delete <span id="delete-recipe-name" class="font-bold text-sand"></span>? This action cannot be undone.</p>
+            <div class="flex justify-end gap-3">
+                <button type="button" id="cancel-delete" class="rounded-md border border-sand bg-transparent text-drysage py-2 px-4 text-sm font-medium hover:text-frostedmint">Cancel</button>
+                <button type="button" id="confirm-delete-btn" class="rounded-md border border-transparent bg-darkraspberry text-frostedmint py-2 px-4 text-sm font-medium shadow-sm hover:opacity-90">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Select Recipe Modal -->
+    <div id="select-recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-lg border border-sand flex flex-col max-h-[80vh]">
+            <h3 class="text-xl font-semibold text-frostedmint mb-4 font-serif">Select a Recipe</h3>
+            <div class="overflow-y-auto flex-1 mb-4">
+                <div id="selectable-recipes-list" class="grid grid-cols-1 gap-2"></div>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" id="cancel-select-recipe" class="rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium hover:bg-sand hover:text-frostedmint">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPTS -->
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -995,6 +1020,69 @@
                 closeDeleteConfirmModal();
                 await fetchRecipes();
                 renderRecipes();
+            }
+        }
+
+        function openSelectRecipeModal(slotId) {
+            currentMealSlotId = slotId;
+            const list = document.getElementById('selectable-recipes-list');
+            list.innerHTML = '';
+            
+            recipesCache.forEach(recipe => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left bg-deepmoss hover:bg-drysage p-3 rounded-md text-frostedmint transition-colors flex items-center gap-3";
+                btn.innerHTML = `
+                    ${recipe.image_url ? `<img src="${recipe.image_url}" class="w-10 h-10 rounded object-cover border border-sand">` : '<div class="w-10 h-10 rounded bg-sand border border-sand"></div>'}
+                    <span class="font-medium truncate">${recipe.name}</span>
+                `;
+                btn.onclick = () => selectRecipeForSlot(recipe.id);
+                list.appendChild(btn);
+            });
+            
+            selectRecipeModal.classList.remove('hidden');
+        }
+
+        function closeSelectRecipeModal() {
+            currentMealSlotId = null;
+            selectRecipeModal.classList.add('hidden');
+        }
+
+        async function selectRecipeForSlot(recipeId) {
+            if (!currentMealSlotId) return;
+            
+            const [day, type] = currentMealSlotId.split('-');
+            
+            if (!supabase) {
+                alert("Not connected to Supabase. Please check your settings.");
+                openSettings();
+                return;
+            }
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if(!user) {
+                 alert("You must be logged in to save meal plans.");
+                 return;
+            }
+
+            // Upsert based on composite key (user_id, day, meal_type) logic usually
+            // But here we might just insert or let the backend handle uniqueness if configured.
+            // Using upsert with explicit columns if needed, but simple upsert often works if ID is involved or constraints.
+            // Since we don't have the ID of the meal_plan row, we rely on a unique constraint on (user_id, day, meal_type).
+            
+            const { error } = await supabase.from('meal_plan').upsert({
+                user_id: user.id,
+                day: day,
+                meal_type: type,
+                recipe_id: recipeId
+            });
+
+            if (error) {
+                console.error("Error saving meal plan:", error);
+                alert("Failed to save selection: " + error.message);
+            } else {
+                await fetchMealPlan();
+                renderMealPlan();
+                closeSelectRecipeModal();
             }
         }
 
