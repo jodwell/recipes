@@ -471,6 +471,42 @@
             recipesCache = data;
         }
 
+        async function handleAddIngredient() {
+            const nameInput = document.getElementById('ingredient-name');
+            const quantityInput = document.getElementById('ingredient-quantity');
+            const name = nameInput.value.trim();
+            const quantity = parseFloat(quantityInput.value);
+            if (!name || !quantity || !currentEditingRecipeId) { alert('Please fill out all ingredient fields.'); return; }
+            
+            try {
+                let { data: existing } = await supabase.from('ingredients').select('id').eq('name', name).single();
+                let ingredientId;
+                if (existing) {
+                    ingredientId = existing.id;
+                } else {
+                    const { data: newIngredient, error } = await supabase.from('ingredients').insert({ name }).select('id').single();
+                    if(error) throw error;
+                    ingredientId = newIngredient.id;
+                }
+
+                const { error: linkError } = await supabase.from('recipe_ingredients').insert({ recipe_id: currentEditingRecipeId, ingredient_id: ingredientId, quantity });
+                if(linkError) throw linkError;
+
+                nameInput.value = '';
+                quantityInput.value = '';
+                await loadIngredientsForRecipe(currentEditingRecipeId);
+            } catch(error) {
+                console.error("Error adding ingredient:", error);
+                alert("Could not add ingredient.");
+            }
+        }
+
+        async function handleRemoveIngredient(recipeIngredientId) {
+            const { error } = await supabase.from('recipe_ingredients').delete().eq('id', recipeIngredientId);
+            if(error) { console.error("Error removing ingredient:", error); alert("Could not remove ingredient.");}
+            else { await loadIngredientsForRecipe(currentEditingRecipeId); }
+        }
+
         async function fetchMealPlan() {
             const { data, error } = await supabase.from('meal_plan').select('*, recipes(name, servings, id)');
             if (error) {
