@@ -499,6 +499,42 @@
             recipesCache = data;
         }
 
+        async function loadIngredientsForRecipe(recipeId) {
+            const list = document.getElementById('ingredients-list');
+            list.innerHTML = '<p class="text-drysage text-sm italic">Loading...</p>';
+            
+            const { data, error } = await supabase
+                .from('recipe_ingredients')
+                .select('id, quantity, ingredients(name)')
+                .eq('recipe_id', recipeId);
+                
+            list.innerHTML = '';
+            
+            if (error) {
+                console.error("Error loading ingredients:", error);
+                list.innerHTML = '<p class="text-darkraspberry text-sm">Error loading ingredients.</p>';
+                return;
+            }
+            
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'flex justify-between items-center bg-deepmoss p-2 rounded text-frostedmint text-sm border border-sand/30';
+                    el.innerHTML = `
+                        <span>${item.ingredients.name} - ${item.quantity}</span>
+                        <button type="button" class="remove-ingredient-btn text-drysage hover:text-darkraspberry" data-id="${item.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
+                    list.appendChild(el);
+                });
+            } else {
+                list.innerHTML = '<p class="text-sand text-sm italic">No ingredients yet.</p>';
+            }
+        }
+
         async function handleAddIngredient() {
             const nameInput = document.getElementById('ingredient-name');
             const quantityInput = document.getElementById('ingredient-quantity');
