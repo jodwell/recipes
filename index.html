@@ -1251,6 +1251,72 @@
             lastMouseX = e.pageX;
         });
 
+        function addDragListeners() {
+            const draggables = document.querySelectorAll('[draggable="true"]');
+            const slots = document.querySelectorAll('.meal-slot');
+
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        planId: draggable.dataset.planId,
+                        recipeId: draggable.dataset.recipeId
+                    }));
+                    draggable.classList.add('opacity-50');
+                });
+
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('opacity-50');
+                });
+            });
+
+            slots.forEach(slot => {
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault(); 
+                    slot.classList.add('bg-drysage/50');
+                });
+
+                slot.addEventListener('dragleave', () => {
+                    slot.classList.remove('bg-drysage/50');
+                });
+
+                slot.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    slot.classList.remove('bg-drysage/50');
+                    
+                    const data = e.dataTransfer.getData('text/plain');
+                    if (!data) return;
+                    
+                    const { planId, recipeId } = JSON.parse(data);
+                    const targetSlotId = slot.dataset.slotId;
+                    
+                    if (!targetSlotId) return; // Should not happen
+
+                    const [day, type] = targetSlotId.split('-');
+                    
+                    // Optimistic update could go here, but for now just update DB
+                     if (!supabase) return;
+                     const { data: { user } } = await supabase.auth.getUser();
+
+                    // If moving an existing plan item to a new slot
+                    if (planId && planId !== 'undefined') {
+                         // Update existing
+                         const { error } = await supabase.from('meal_plan').update({
+                             day: day,
+                             meal_type: type
+                         }).eq('id', planId);
+                         
+                         if(error) console.error("Move error", error);
+                    } else {
+                        // Dragging from recipe list (not implemented yet, but structure supports it)
+                        // For now we only drag within the grid
+                    }
+                    
+                    await fetchMealPlan();
+                    renderMealPlan();
+                });
+            });
+        }
+
         function beginMomentum() {
             cancelAnimationFrame(momentumID);
             momentumID = requestAnimationFrame(momentumLoop);
