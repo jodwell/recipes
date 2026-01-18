@@ -499,7 +499,7 @@
             recipesCache = data;
         }
 
-        async function loadIngredientsForRecipe(recipeId) {
+        window.loadIngredientsForRecipe = async function(recipeId) {
             const list = document.getElementById('ingredients-list');
             list.innerHTML = '<p class="text-drysage text-sm italic">Loading...</p>';
             
