@@ -75,11 +75,13 @@ create policy "Allow authenticated users" on meal_plan for all using (auth.role(
 
 ### 3. Configure Authentication
 
-To allow yourself to log in without setting up an email server:
+To ensure email verification redirects you back to your app:
 
-1.  Go to **Authentication** (left sidebar) -> **Providers** -> **Email**.
-2.  **Disable** "Confirm email".
+1.  Go to **Authentication** (left sidebar) -> **URL Configuration**.
+2.  Set the **Site URL** to your app's URL (e.g., `https://your-username.github.io/recipes` or `http://localhost:port`).
 3.  Click **Save**.
+
+*Note: When you sign up, check your email for a confirmation link to activate your account.*
 
 ### 4. Deploy the App
 
