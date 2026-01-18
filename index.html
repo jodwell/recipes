@@ -52,8 +52,14 @@
 <body class="text-frostedmint">
 
     <div class="container mx-auto max-w-6xl px-4 py-12">
-        <header class="mb-12 text-center">
+        <header class="mb-12 text-center relative">
             <h1 class="text-8xl text-frostedmint font-pacifico tracking-normal">My Recipes</h1>
+            <button id="open-settings-btn" class="absolute top-0 right-0 p-2 text-drysage hover:text-sand" title="Connection Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
         </header>
 
         <!-- NAVIGATION -->
@@ -199,13 +205,91 @@
     </div>
 
 
+    <div id="view-recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden flex items-start justify-center p-4 overflow-y-auto z-50">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl w-full max-w-3xl my-auto border border-sand overflow-hidden">
+            <div id="view-recipe-header" class="relative h-64 w-full bg-drysage">
+                <img id="view-recipe-image" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-granite to-transparent"></div>
+                <button id="close-view-modal" class="absolute top-4 right-4 bg-black/50 text-frostedmint rounded-full p-2 hover:bg-black/70 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <h2 id="view-recipe-name" class="absolute bottom-4 left-6 text-4xl font-pacifico text-frostedmint drop-shadow-md"></h2>
+            </div>
+            <div class="p-6 sm:p-8">
+                <div class="flex flex-wrap gap-4 text-drysage mb-6 text-sm font-medium border-b border-sand pb-4">
+                    <div class="flex items-center gap-1"><span class="text-sand">Prep:</span> <span id="view-prep-time"></span></div>
+                    <div class="flex items-center gap-1"><span class="text-sand">Cook:</span> <span id="view-cook-time"></span></div>
+                    <div class="flex items-center gap-1"><span class="text-sand">Total:</span> <span id="view-total-time"></span></div>
+                    <div class="flex items-center gap-1 ml-auto"><span class="text-sand">Servings:</span> <span id="view-servings"></span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1">
+                        <h3 class="text-xl font-serif text-sand mb-3">Ingredients</h3>
+                        <ul id="view-ingredients-list" class="space-y-2 text-frostedmint text-sm"></ul>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h3 class="text-xl font-serif text-sand mb-3">Instructions</h3>
+                        <div id="view-instructions" class="text-frostedmint leading-relaxed whitespace-pre-wrap"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-granite border border-sand rounded-2xl shadow-xl p-6 w-full max-w-md border border-sand">
+            <h2 class="text-2xl font-semibold text-frostedmint mb-4 font-serif">App Setup</h2>
+            <p class="text-drysage mb-4 text-sm">Connect to your Supabase project and log in to access your secure recipes.</p>
+            
+            <form id="settings-form" class="space-y-4">
+                <div class="border-b border-sand pb-4 mb-4">
+                    <h3 class="text-sand font-semibold mb-2 text-sm uppercase tracking-wide">1. Connection</h3>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="block text-xs font-medium text-drysage">Supabase URL</label>
+                            <input type="text" name="supabase_url" id="setting-url" placeholder="https://xyz.supabase.co" class="mt-1 block w-full rounded-md bg-deepmoss text-frostedmint placeholder-granite/50 border-sand shadow-sm focus:border-sand focus:ring-sand p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-drysage">Supabase Anon Key</label>
+                            <input type="password" name="supabase_key" id="setting-key" placeholder="eyJhbG..." class="mt-1 block w-full rounded-md bg-deepmoss text-frostedmint placeholder-granite/50 border-sand shadow-sm focus:border-sand focus:ring-sand p-2 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sand font-semibold mb-2 text-sm uppercase tracking-wide">2. Authentication</h3>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="block text-xs font-medium text-drysage">Email</label>
+                            <input type="email" name="email" id="auth-email" placeholder="you@example.com" class="mt-1 block w-full rounded-md bg-deepmoss text-frostedmint placeholder-granite/50 border-sand shadow-sm focus:border-sand focus:ring-sand p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-drysage">Password</label>
+                            <input type="password" name="password" id="auth-password" placeholder="••••••••" class="mt-1 block w-full rounded-md bg-deepmoss text-frostedmint placeholder-granite/50 border-sand shadow-sm focus:border-sand focus:ring-sand p-2 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="auth-error" class="text-darkraspberry text-sm hidden font-bold"></div>
+
+                <div class="flex justify-between items-center mt-6 pt-2">
+                    <button type="button" id="cancel-settings" class="text-drysage hover:text-sand text-sm">Cancel</button>
+                    <div class="flex gap-2">
+                        <button type="button" id="btn-signup" class="rounded-md border border-sand bg-transparent text-frostedmint py-2 px-4 text-sm font-medium hover:bg-sand/20">Sign Up</button>
+                        <button type="submit" id="btn-login" class="rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Log In</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        const SUPABASE_URL = 'https://gogaumvwgjcnchypnkut.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZ2F1bXZ3Z2pjbmNoeXBua3V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDk0NjQsImV4cCI6MjA3NTYyNTQ2NH0.UpdVK5HSP4_9In9x51oM7ToZP64B8CNSZDf-VIQPUe8';
-
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase;
         let recipesCache = [];
         let mealPlanCache = [];
         let currentEditingRecipeId = null;
@@ -214,13 +298,144 @@
         let lastGeneratedShoppingMap = new Map();
         let manualShoppingItems = [];
 
+        // UI Refs
         const navButtons = document.querySelectorAll('.nav-btn');
         const pages = document.querySelectorAll('.page');
         const addModal = document.getElementById('add-modal');
         const editModal = document.getElementById('edit-modal');
         const selectRecipeModal = document.getElementById('select-recipe-modal');
         const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const settingsModal = document.getElementById('settings-modal');
         const recipesListContainer = document.getElementById('recipes-list');
+
+        // --- SETUP & CONNECTION LOGIC ---
+        function getStoredConfig() {
+            return {
+                url: localStorage.getItem('supabase_url'),
+                key: localStorage.getItem('supabase_key')
+            };
+        }
+
+        async function initApp() {
+            const config = getStoredConfig();
+            
+            // If connection details missing, force settings
+            if (!config.url || !config.key) {
+                openSettings(true); 
+                return;
+            }
+
+            try {
+                // 1. Initialize Client
+                supabase = createClient(config.url, config.key);
+                
+                // 2. Check Session (Auth)
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error || !session) {
+                    console.log("No active session, prompting login.");
+                    openSettings(true); // Re-open to prompt login
+                    return;
+                }
+
+                // 3. Load Data
+                await Promise.all([fetchRecipes(), fetchMealPlan()]);
+                renderRecipes();
+                renderMealPlan();
+                settingsModal.classList.add('hidden');
+
+            } catch (e) {
+                console.error("Initialization failed", e);
+                document.getElementById('auth-error').textContent = "Connection failed. Check keys.";
+                document.getElementById('auth-error').classList.remove('hidden');
+                openSettings(true);
+            }
+        }
+
+        function openSettings(force = false) {
+            const config = getStoredConfig();
+            document.getElementById('setting-url').value = config.url || '';
+            document.getElementById('setting-key').value = config.key || '';
+            
+            const cancelBtn = document.getElementById('cancel-settings');
+            if (force) {
+                cancelBtn.classList.add('hidden');
+            } else {
+                cancelBtn.classList.remove('hidden');
+            }
+            settingsModal.classList.remove('hidden');
+        }
+
+        // Helper to save config
+        function saveConfig() {
+            const formData = new FormData(document.getElementById('settings-form'));
+            const url = formData.get('supabase_url').trim();
+            const key = formData.get('supabase_key').trim();
+            if(url && key) {
+                localStorage.setItem('supabase_url', url);
+                localStorage.setItem('supabase_key', key);
+                // Re-init client with new keys immediately
+                supabase = createClient(url, key);
+            }
+            return { email: formData.get('email'), password: formData.get('password') };
+        }
+
+        // LOGIN Handler
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { email, password } = saveConfig();
+            const errorDiv = document.getElementById('auth-error');
+            
+            if (!email || !password) {
+                errorDiv.textContent = "Please enter email and password.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+            btn.textContent = "Logging in...";
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = "Log In";
+            } else {
+                // Success
+                location.reload(); 
+            }
+        });
+
+        // SIGNUP Handler
+        document.getElementById('btn-signup').addEventListener('click', async () => {
+            const { email, password } = saveConfig();
+            const errorDiv = document.getElementById('auth-error');
+
+            if (!email || !password) {
+                errorDiv.textContent = "Please enter email and password.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            
+            if (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } else {
+                alert("Sign up successful! You are now logged in.");
+                location.reload();
+            }
+        });
+
+        document.getElementById('open-settings-btn').addEventListener('click', () => openSettings(false));
+        document.getElementById('cancel-settings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        // --- EXISTING APP LOGIC ---
 
         navButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -242,26 +457,81 @@
             recipesCache = data;
         }
 
-        const readFileAsBase64 = (file) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        };
+        const viewRecipeModal = document.getElementById('view-recipe-modal');
 
+        // ... existing refs ...
+
+        // --- VIEW MODAL LOGIC ---
+        async function openViewModal(recipeId) {
+            const recipe = recipesCache.find(r => r.id == recipeId);
+            if (!recipe) return;
+
+            // Populate Data
+            document.getElementById('view-recipe-name').textContent = recipe.name;
+            const img = document.getElementById('view-recipe-image');
+            if (recipe.image_url) {
+                img.src = recipe.image_url;
+                img.classList.remove('hidden');
+            } else {
+                img.src = ''; // Or a placeholder
+                img.classList.add('hidden'); // Hide if no image, or show a default pattern
+            }
+            
+            document.getElementById('view-prep-time').textContent = recipe.prep_time ? `${recipe.prep_time} mins` : '-';
+            document.getElementById('view-cook-time').textContent = recipe.cook_time ? `${recipe.cook_time} mins` : '-';
+            const total = (recipe.prep_time || 0) + (recipe.cook_time || 0);
+            document.getElementById('view-total-time').textContent = total > 0 ? `${total} mins` : '-';
+            document.getElementById('view-servings').textContent = recipe.servings || '-';
+            document.getElementById('view-instructions').textContent = recipe.instructions || 'No instructions provided.';
+
+            // Fetch Ingredients
+            const list = document.getElementById('view-ingredients-list');
+            list.innerHTML = '<li class="text-drysage italic">Loading ingredients...</li>';
+            
+            const { data: ingredients, error } = await supabase.from('recipe_ingredients').select('quantity, ingredients(name)').eq('recipe_id', recipe.id);
+            
+            list.innerHTML = '';
+            if (error || !ingredients || ingredients.length === 0) {
+                list.innerHTML = '<li class="text-drysage italic">No ingredients found.</li>';
+            } else {
+                ingredients.forEach(i => {
+                    const li = document.createElement('li');
+                    li.className = "flex justify-between border-b border-sand/20 pb-1";
+                    li.innerHTML = `<span>${i.ingredients.name}</span> <span class="text-drysage">${i.quantity}</span>`;
+                    list.appendChild(li);
+                });
+            }
+
+            viewRecipeModal.classList.remove('hidden');
+        }
+
+        document.getElementById('close-view-modal').addEventListener('click', () => {
+            viewRecipeModal.classList.add('hidden');
+        });
+
+        // --- RENDER RECIPES UPDATE ---
         function renderRecipes() {
             recipesListContainer.innerHTML = '';
             if (recipesCache.length === 0) { recipesListContainer.innerHTML = '<p class="text-drysage">No recipes found.</p>'; return; }
             recipesCache.forEach(recipe => {
                 const el = document.createElement('div');
                 // Card Style
-                el.className = 'flex-none w-72 bg-deepmoss border border-sand rounded-xl overflow-hidden shadow-lg flex flex-col snap-start transition-transform hover:scale-[1.01]';
+                el.className = 'flex-none w-72 bg-deepmoss border border-sand rounded-xl overflow-hidden shadow-lg flex flex-col snap-start transition-transform hover:scale-[1.01] cursor-pointer group';
                 
+                // Add Click Listener to Card
+                el.onclick = (e) => {
+                    // Prevent opening if clicking edit/delete buttons
+                    if (!e.target.closest('button')) {
+                        openViewModal(recipe.id);
+                    }
+                };
+
                 const imgDisplay = recipe.image_url 
-                    ? `<img src="${recipe.image_url}" alt="${recipe.name}" class="h-48 w-full object-cover bg-drysage select-none pointer-events-none">`
+                    ? `<img src="${recipe.image_url}" alt="${recipe.name}" class="h-48 w-full object-cover bg-drysage select-none pointer-events-none group-hover:opacity-90 transition-opacity">`
                     : `<div class="h-48 w-full bg-drysage flex items-center justify-center text-granite/50 select-none"><span class="font-serif italic text-lg">No Image</span></div>`;
+
+                const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
+                const timeDisplay = totalTime > 0 ? `${totalTime} mins` : 'N/A';
 
                 el.innerHTML = `
                     ${imgDisplay}
@@ -269,12 +539,15 @@
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-semibold text-xl text-frostedmint font-serif leading-tight">${recipe.name}</h3>
                         </div>
-                        <p class="text-sm text-sand mb-4 flex-1">Servings: ${recipe.servings || 'N/A'}</p>
+                        <div class="flex justify-between text-sm text-sand mb-4">
+                            <span>Servings: ${recipe.servings || 'N/A'}</span>
+                            <span>Time: ${timeDisplay}</span>
+                        </div>
                         <div class="flex justify-end gap-3 mt-auto pt-3 border-t border-sand/30">
-                            <button data-id="${recipe.id}" class="edit-btn text-drysage hover:text-sand p-1" title="Edit Recipe">
+                            <button data-id="${recipe.id}" class="edit-btn text-drysage hover:text-sand p-1 z-10" title="Edit Recipe">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
                             </button>
-                            <button data-id="${recipe.id}" class="delete-btn text-drysage hover:text-darkraspberry p-1" title="Delete Recipe">
+                            <button data-id="${recipe.id}" class="delete-btn text-drysage hover:text-darkraspberry p-1 z-10" title="Delete Recipe">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                             </button>
                         </div>
@@ -283,13 +556,20 @@
             });
         }
 
-        function openAddModal() { 
-            addModal.classList.remove('hidden'); 
-            // Reset image state
-            document.getElementById('add-image-input').value = '';
-            document.getElementById('add-image-base64').value = '';
-            document.getElementById('add-image-preview-container').classList.add('hidden');
-        }
+        // ... inside renderMealPlan, update the slot interaction ...
+        
+        // (Snippet from renderMealPlan where we create the slot HTML)
+        // We need to attach the click listener to the slot element after creation or via delegation
+        
+        // ... (inside renderMealPlan loop) ...
+        /* 
+           This part is tricky with string concatenation. 
+           Best approach: Add a class 'view-meal-btn' to the filled slot div, 
+           and handle it in the global click listener or attach individually.
+           Let's update the global listener at the bottom.
+        */
+
+        // ... existing openAddModal ...
         function closeAddModal() { document.getElementById('add-recipe-form').reset(); addModal.classList.add('hidden'); }
 
         async function handleAddFormSubmit(event) {
@@ -930,8 +1210,18 @@
         document.getElementById('meal-plan-grid').addEventListener('click', (e) => {
             const addBtn = e.target.closest('.add-to-plan-btn');
             const removeBtn = e.target.closest('.remove-from-plan-btn');
-            if (addBtn) { openSelectRecipeModal(addBtn.dataset.slotId); }
-            if (removeBtn) { handleRemoveFromPlan(removeBtn.dataset.id); }
+            
+            // Check for clicking on a filled meal slot to view details
+            const mealSlotContent = e.target.closest('[data-recipe-id]');
+            
+            if (addBtn) { 
+                openSelectRecipeModal(addBtn.dataset.slotId); 
+            } else if (removeBtn) { 
+                handleRemoveFromPlan(removeBtn.dataset.id); 
+            } else if (mealSlotContent) {
+                // If we clicked the content (and not the remove button which is handled above)
+                openViewModal(mealSlotContent.dataset.recipeId);
+            }
         });
 
         document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
@@ -1004,13 +1294,7 @@
             }
         }
 
-        async function initializeApp() {
-            await Promise.all([fetchRecipes(), fetchMealPlan()]);
-            renderRecipes();
-            renderMealPlan();
-        }
-
-        initializeApp();
+        initApp();
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
