@@ -39,13 +39,14 @@
         .modal.hidden, .page.hidden { display: none; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-through-gray { text-decoration: line-through; color: #6b7280; }
     </style>
 </head>
 <body class="text-frostedmint">
 
     <div class="container mx-auto max-w-6xl px-4 py-12">
         <header class="mb-12 text-center relative">
-            <h1 class="text-8xl text-frostedmint font-pacifico tracking-normal">My Recipes</h1>
+            <h1 class="text-4xl md:text-8xl text-frostedmint font-pacifico tracking-normal">My Recipes</h1>
             <button id="open-settings-btn" class="absolute top-0 right-0 p-2 text-drysage hover:text-sand" title="Connection Settings">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -328,6 +329,7 @@
         let recipeToDeleteId = null;
         let lastGeneratedShoppingMap = new Map();
         let manualShoppingItems = [];
+        let checkedItems = new Set();
         let newIngredientsBuffer = [];
 
         const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -972,11 +974,6 @@
         });
 
         document.getElementById('cancel-select-recipe').addEventListener('click', closeSelectRecipeModal);
-        document.getElementById('selectable-recipes-list').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && e.target.dataset.recipeId) {
-                handleAddToPlan(e.target.dataset.recipeId);
-            }
-        });
 
         // --- UTILS ---
         async function handleImageFileSelect(e, hiddenInputId, previewContainerId, previewImgId) {
@@ -1089,8 +1086,6 @@
         async function selectRecipeForSlot(recipeId) {
             if (!currentMealSlotId) return;
             
-            const [day, type] = currentMealSlotId.split('-');
-            
             if (!supabase) {
                 alert("Not connected to Supabase. Please check your settings.");
                 openSettings();
@@ -1103,15 +1098,8 @@
                  return;
             }
 
-            // Upsert based on composite key (user_id, day, meal_type) logic usually
-            // But here we might just insert or let the backend handle uniqueness if configured.
-            // Using upsert with explicit columns if needed, but simple upsert often works if ID is involved or constraints.
-            // Since we don't have the ID of the meal_plan row, we rely on a unique constraint on (user_id, day, meal_type).
-            
             const { error } = await supabase.from('meal_plan').upsert({
-                user_id: user.id,
-                day: day,
-                meal_type: type,
+                slot_id: currentMealSlotId,
                 recipe_id: recipeId
             });
 
@@ -1125,6 +1113,18 @@
             }
         }
 
+        async function handleRemoveFromPlan(planId) {
+            if (!supabase) return;
+            const { error } = await supabase.from('meal_plan').delete().eq('id', planId);
+            if (error) {
+                console.error("Error removing from meal plan:", error);
+                alert("Could not remove item from meal plan.");
+            } else {
+                await fetchMealPlan();
+                renderMealPlan();
+            }
+        }
+
         async function generateShoppingList() {
             if (mealPlanCache.length === 0) {
                 alert("Meal plan is empty. Add some recipes first!");
@@ -1132,6 +1132,7 @@
             }
 
             lastGeneratedShoppingMap.clear();
+            checkedItems.clear();
             const listContainer = document.getElementById('shopping-list-container');
             listContainer.innerHTML = '<p class="text-drysage italic">Generating list...</p>';
 
@@ -1182,20 +1183,30 @@
 
             lastGeneratedShoppingMap.forEach((qty, name) => {
                 const li = document.createElement('li');
-                li.className = "py-3 flex justify-between items-center";
+                li.className = "py-3 flex items-center gap-3 group";
+                const checkId = `check-${name.replace(/\s+/g, '-')}`;
+                const isChecked = checkedItems.has(name);
                 li.innerHTML = `
-                    <span class="text-frostedmint">${name}</span>
-                    <span class="text-drysage font-mono">${qty > 0 ? qty : ''}</span>
+                    <input type="checkbox" id="${checkId}" class="shopping-check w-5 h-5 rounded border-sand text-drysage focus:ring-sand bg-granite" ${isChecked ? 'checked' : ''} data-name="${name}">
+                    <label for="${checkId}" class="flex-1 flex justify-between items-center cursor-pointer select-none ${isChecked ? 'line-through-gray' : ''}">
+                        <span class="text-frostedmint group-hover:text-sand transition-colors ${isChecked ? '' : 'text-frostedmint'}">${name}</span>
+                        <span class="text-drysage font-mono">${qty > 0 ? qty : ''}</span>
+                    </label>
                 `;
                 ul.appendChild(li);
             });
 
             manualShoppingItems.forEach(item => {
                  const li = document.createElement('li');
-                li.className = "py-3 flex justify-between items-center";
+                li.className = "py-3 flex items-center gap-3 group";
+                const checkId = `check-manual-${item.replace(/\s+/g, '-')}`;
+                const isChecked = checkedItems.has(item);
                 li.innerHTML = `
-                    <span class="text-frostedmint">${item}</span>
-                    <button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm" data-item="${item}">Remove</button>
+                    <input type="checkbox" id="${checkId}" class="shopping-check w-5 h-5 rounded border-sand text-drysage focus:ring-sand bg-granite" ${isChecked ? 'checked' : ''} data-name="${item}">
+                    <label for="${checkId}" class="flex-1 flex justify-between items-center cursor-pointer select-none ${isChecked ? 'line-through-gray' : ''}">
+                        <span class="text-frostedmint group-hover:text-sand transition-colors ${isChecked ? '' : 'text-frostedmint'}">${item}</span>
+                    </label>
+                    <button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm ml-2" data-item="${item}">Remove</button>
                 `;
                 ul.appendChild(li);
             });
@@ -1205,6 +1216,22 @@
             ul.querySelectorAll('.remove-manual-item-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     removeManualItem(e.target.dataset.item);
+                });
+            });
+
+            ul.querySelectorAll('.shopping-check').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const label = e.target.nextElementSibling;
+                    const name = e.target.dataset.name;
+                    if (e.target.checked) {
+                        checkedItems.add(name);
+                        label.classList.add('line-through-gray');
+                        label.querySelector('span').classList.remove('text-frostedmint');
+                    } else {
+                        checkedItems.delete(name);
+                        label.classList.remove('line-through-gray');
+                        label.querySelector('span').classList.add('text-frostedmint');
+                    }
                 });
             });
         }
@@ -1293,9 +1320,12 @@
 
             draggables.forEach(draggable => {
                 draggable.addEventListener('dragstart', (e) => {
+                    const slot = draggable.closest('.meal-slot');
                     e.dataTransfer.setData('text/plain', JSON.stringify({
                         planId: draggable.dataset.planId,
-                        recipeId: draggable.dataset.recipeId
+                        recipeId: draggable.dataset.recipeId,
+                        currentServings: draggable.dataset.currentServings,
+                        sourceSlotId: slot ? slot.dataset.slotId : null
                     }));
                     draggable.classList.add('opacity-50');
                 });
@@ -1322,29 +1352,61 @@
                     const data = e.dataTransfer.getData('text/plain');
                     if (!data) return;
                     
-                    const { planId, recipeId } = JSON.parse(data);
+                    const { planId, recipeId, currentServings, sourceSlotId } = JSON.parse(data);
                     const targetSlotId = slot.dataset.slotId;
                     
-                    if (!targetSlotId) return; // Should not happen
+                    if (!targetSlotId || !supabase) return;
+                    if (sourceSlotId === targetSlotId) return;
 
-                    const [day, type] = targetSlotId.split('-');
-                    
-                    // Optimistic update could go here, but for now just update DB
-                     if (!supabase) return;
-                     const { data: { user } } = await supabase.auth.getUser();
+                    const servings = parseFloat(currentServings) || 1;
 
-                    // If moving an existing plan item to a new slot
+                    // Check target slot
+                    const { data: targetData } = await supabase.from('meal_plan').select('*').eq('slot_id', targetSlotId).maybeSingle();
+
                     if (planId && planId !== 'undefined') {
-                         // Update existing
-                         const { error } = await supabase.from('meal_plan').update({
-                             day: day,
-                             meal_type: type
-                         }).eq('id', planId);
-                         
-                         if(error) console.error("Move error", error);
-                    } else {
-                        // Dragging from recipe list (not implemented yet, but structure supports it)
-                        // For now we only drag within the grid
+                        if (servings > 1) {
+                            // Split: Decrement source, Add 1 to target
+                            await supabase.from('meal_plan').update({ portions: servings - 1 }).eq('id', planId);
+
+                            if (targetData) {
+                                if (targetData.recipe_id == recipeId) {
+                                    // Merge into target
+                                    let targetPortions = targetData.portions;
+                                    if (targetPortions === null) {
+                                        const r = recipesCache.find(x => x.id == targetData.recipe_id);
+                                        targetPortions = r ? r.servings : 1;
+                                    }
+                                    await supabase.from('meal_plan').update({ portions: targetPortions + 1 }).eq('id', targetData.id);
+                                } else {
+                                    // Overwrite target
+                                    await supabase.from('meal_plan').update({ recipe_id: recipeId, portions: 1 }).eq('id', targetData.id);
+                                }
+                            } else {
+                                // Insert new
+                                await supabase.from('meal_plan').insert({ slot_id: targetSlotId, recipe_id: recipeId, portions: 1 });
+                            }
+                        } else {
+                            // Move whole item (last portion)
+                            if (targetData) {
+                                if (targetData.recipe_id == recipeId) {
+                                    // Merge source into target
+                                    let targetPortions = targetData.portions;
+                                    if (targetPortions === null) {
+                                        const r = recipesCache.find(x => x.id == targetData.recipe_id);
+                                        targetPortions = r ? r.servings : 1;
+                                    }
+                                    await supabase.from('meal_plan').update({ portions: targetPortions + 1 }).eq('id', targetData.id);
+                                    await supabase.from('meal_plan').delete().eq('id', planId);
+                                } else {
+                                    // Overwrite target: delete target, move source
+                                    await supabase.from('meal_plan').delete().eq('id', targetData.id);
+                                    await supabase.from('meal_plan').update({ slot_id: targetSlotId }).eq('id', planId);
+                                }
+                            } else {
+                                // Just move
+                                await supabase.from('meal_plan').update({ slot_id: targetSlotId }).eq('id', planId);
+                            }
+                        }
                     }
                     
                     await fetchMealPlan();
