@@ -351,6 +351,32 @@
         let checkedItems = new Set();
         let newIngredientsBuffer = [];
 
+        async function fetchShoppingList() {
+            const { data, error } = await supabase
+                .from('shopping_list')
+                .select('*');
+            if (error) {
+                console.error("Error fetching shopping list:", error);
+                return;
+            }
+            lastGeneratedShoppingMap.clear();
+            manualShoppingItems = [];
+            checkedItems.clear();
+            if (data) {
+                data.forEach(row => {
+                    if (row.is_manual) {
+                        manualShoppingItems.push(row.name);
+                        if (row.is_checked) checkedItems.add(row.name);
+                    } else {
+                        const key = row.unit ? `${row.name}|${row.unit}` : row.name;
+                        const existing = lastGeneratedShoppingMap.get(key) || 0;
+                        lastGeneratedShoppingMap.set(key, existing + Number(row.quantity));
+                        if (row.is_checked) checkedItems.add(key);
+                    }
+                });
+            }
+        }
+
         const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         const mealTypes = ['Breakfast', 'Lunch', 'Dinner'];
 
@@ -417,9 +443,10 @@
 
                 console.log("Session found, fetching data...");
                 showLoadingStates();
-                await Promise.all([fetchRecipes(), fetchMealPlan()]);
+                await Promise.all([fetchRecipes(), fetchMealPlan(), fetchShoppingList()]);
                 renderRecipes();
                 renderMealPlan();
+                renderShoppingList();
                 hideLoadingStates();
                 settingsModal.classList.add('hidden');
                 console.log("App loaded successfully.");
@@ -1152,7 +1179,7 @@
         async function handleGenerateImage(nameInputId, instructionsInputId, hiddenInputId, previewContainerId, previewImgId, btnId) {
             const name = document.getElementById(nameInputId).value.trim();
             const instructions = document.getElementById(instructionsInputId).value.trim();
-            
+
             if (!name) {
                 alert("Please enter a Recipe Name first.");
                 return;
@@ -1163,27 +1190,66 @@
             btn.textContent = "Generating...";
             btn.disabled = true;
 
-            const prompt = `Professional food photography of ${name}, ${instructions.substring(0, 50)}... appetizing, high resolution, 4k`;
-            const encodedPrompt = encodeURIComponent(prompt);
-            const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true`;
+            // Try multiple image generation services
+            const services = [
+                {
+                    name: "Pollinations",
+                    generateUrl: (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&enhance=true`
+                },
+                {
+                    name: "Pollinations Alt",
+                    generateUrl: (prompt) => `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true`
+                }
+            ];
 
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Generation failed");
-                const blob = await response.blob();
-                const base64 = await readFileAsBase64(blob);
-                
-                document.getElementById(hiddenInputId).value = base64;
-                document.getElementById(previewImgId).src = base64;
-                document.getElementById(previewContainerId).classList.remove('hidden');
-                
-            } catch (err) {
-                console.error("Image generation error:", err);
-                alert("Could not generate image. Please try again.");
-            } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
+            const prompt = `Professional food photography of ${name}, ${instructions.substring(0, 50)}... appetizing, high resolution, 4k, delicious, restaurant quality`;
+
+            for (const service of services) {
+                try {
+                    console.log(`Trying ${service.name} for image generation...`);
+                    const url = service.generateUrl(prompt);
+
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const blob = await response.blob();
+
+                    // Check if we got a valid image
+                    if (blob.size < 1000 || !blob.type.startsWith('image/')) {
+                        throw new Error("Invalid image received");
+                    }
+
+                    const base64 = await readFileAsBase64(blob);
+
+                    document.getElementById(hiddenInputId).value = base64;
+                    document.getElementById(previewImgId).src = base64;
+                    document.getElementById(previewContainerId).classList.remove('hidden');
+
+                    console.log(`Successfully generated image using ${service.name}`);
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return; // Success, exit the function
+
+                } catch (err) {
+                    console.warn(`${service.name} failed:`, err.message);
+                    continue; // Try the next service
+                }
             }
+
+            // If all services failed
+            console.error("All image generation services failed");
+            alert("Could not generate image. The AI image services may be temporarily unavailable. Please try uploading an image manually or try again later.");
+
+            btn.textContent = originalText;
+            btn.disabled = false;
         }
 
         function handleRemoveImage(hiddenInputId, previewContainerId, fileInputId) {
@@ -1266,6 +1332,7 @@
                 btn.innerHTML = `
                     ${recipe.image_url ? `<img src="${recipe.image_url}" class="w-10 h-10 rounded object-cover border border-sand">` : '<div class="w-10 h-10 rounded bg-sand border border-sand"></div>'}
                     <span class="font-medium truncate">${recipe.name}</span>
+                    <span class="ml-auto text-sm text-sand whitespace-nowrap">${recipe.servings ? 'x' + recipe.servings : ''}</span>
                 `;
                 btn.onclick = () => selectRecipeForSlot(recipe.id);
                 list.appendChild(btn);
@@ -1366,8 +1433,44 @@
                 }
             }
             
+            // Persist generated items to Supabase
+            try {
+                // Fetch existing checked state before deleting
+                const { data: existingRows } = await supabase
+                    .from('shopping_list')
+                    .select('name, unit, is_checked')
+                    .eq('is_manual', false);
+                const previouslyChecked = new Set();
+                if (existingRows) {
+                    existingRows.forEach(row => {
+                        if (row.is_checked) {
+                            const k = row.unit ? `${row.name}|${row.unit}` : row.name;
+                            previouslyChecked.add(k);
+                        }
+                    });
+                }
+
+                // Delete old generated rows
+                await supabase.from('shopping_list').delete().eq('is_manual', false);
+
+                // Build rows to insert
+                const rows = [];
+                lastGeneratedShoppingMap.forEach((qty, key) => {
+                    const [name, unit] = key.includes('|') ? key.split('|') : [key, ''];
+                    const isChecked = previouslyChecked.has(key);
+                    if (isChecked) checkedItems.add(key);
+                    rows.push({ name, unit, quantity: qty, is_manual: false, is_checked: isChecked });
+                });
+                if (rows.length > 0) {
+                    const { error: insertErr } = await supabase.from('shopping_list').insert(rows);
+                    if (insertErr) console.error("Error saving shopping list:", insertErr);
+                }
+            } catch (e) {
+                console.error("Error persisting shopping list:", e);
+            }
+
             renderShoppingList();
-            
+
             // Switch to shopping tab
             navButtons.forEach(btn => btn.classList.remove('active', 'text-frostedmint', 'bg-sand'));
             pages.forEach(p => p.classList.add('hidden'));
@@ -1384,37 +1487,36 @@
                  return;
             }
 
-            const ul = document.createElement('ul');
-            ul.className = "divide-y divide-sand";
+            // Build all items into an array, then sort unchecked first
+            const allItems = [];
 
             lastGeneratedShoppingMap.forEach((qty, key) => {
                 const [name, unit] = key.includes('|') ? key.split('|') : [key, ''];
+                const displayQty = Math.round(qty * 100) / 100;
+                const quantityUnit = unit ? `${displayQty} ${unit}` : (displayQty > 0 ? displayQty : '');
+                allItems.push({ key, name, quantityUnit, isManual: false, isChecked: checkedItems.has(key) });
+            });
+
+            manualShoppingItems.forEach(item => {
+                allItems.push({ key: item, name: item, quantityUnit: '', isManual: true, isChecked: checkedItems.has(item) });
+            });
+
+            allItems.sort((a, b) => a.isChecked - b.isChecked);
+
+            const ul = document.createElement('ul');
+            ul.className = "divide-y divide-sand";
+
+            allItems.forEach(({ key, name, quantityUnit, isManual, isChecked }) => {
                 const li = document.createElement('li');
                 li.className = "py-3 flex items-center gap-3 group";
-                const checkId = `check-${key.replace(/[\s|]+/g, '-')}`;
-                const isChecked = checkedItems.has(key);
-                const quantityUnit = unit ? `${qty} ${unit}` : (qty > 0 ? qty : '');
+                const checkId = isManual ? `check-manual-${key.replace(/\s+/g, '-')}` : `check-${key.replace(/[\s|]+/g, '-')}`;
                 li.innerHTML = `
                     <input type="checkbox" id="${checkId}" class="shopping-check w-5 h-5 rounded border-sand text-drysage focus:ring-sand bg-granite" ${isChecked ? 'checked' : ''} data-name="${key}">
                     <label for="${checkId}" class="flex-1 flex justify-between items-center cursor-pointer select-none ${isChecked ? 'line-through-gray' : ''}">
                         <span class="text-frostedmint group-hover:text-sand transition-colors ${isChecked ? '' : 'text-frostedmint'}">${name}</span>
-                        <span class="text-drysage font-mono">${quantityUnit}</span>
+                        ${quantityUnit ? `<span class="text-drysage font-mono">${quantityUnit}</span>` : ''}
                     </label>
-                `;
-                ul.appendChild(li);
-            });
-
-            manualShoppingItems.forEach(item => {
-                 const li = document.createElement('li');
-                li.className = "py-3 flex items-center gap-3 group";
-                const checkId = `check-manual-${item.replace(/\s+/g, '-')}`;
-                const isChecked = checkedItems.has(item);
-                li.innerHTML = `
-                    <input type="checkbox" id="${checkId}" class="shopping-check w-5 h-5 rounded border-sand text-drysage focus:ring-sand bg-granite" ${isChecked ? 'checked' : ''} data-name="${item}">
-                    <label for="${checkId}" class="flex-1 flex justify-between items-center cursor-pointer select-none ${isChecked ? 'line-through-gray' : ''}">
-                        <span class="text-frostedmint group-hover:text-sand transition-colors ${isChecked ? '' : 'text-frostedmint'}">${item}</span>
-                    </label>
-                    <button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm ml-2" data-item="${item}">Remove</button>
+                    ${isManual ? `<button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm ml-2" data-item="${key}">Remove</button>` : ''}
                 `;
                 ul.appendChild(li);
             });
@@ -1428,23 +1530,31 @@
             });
 
             ul.querySelectorAll('.shopping-check').forEach(chk => {
-                chk.addEventListener('change', (e) => {
+                chk.addEventListener('change', async (e) => {
                     const label = e.target.nextElementSibling;
                     const name = e.target.dataset.name;
-                    if (e.target.checked) {
+                    const isChecked = e.target.checked;
+                    if (isChecked) {
                         checkedItems.add(name);
-                        label.classList.add('line-through-gray');
-                        label.querySelector('span').classList.remove('text-frostedmint');
                     } else {
                         checkedItems.delete(name);
-                        label.classList.remove('line-through-gray');
-                        label.querySelector('span').classList.add('text-frostedmint');
                     }
+                    renderShoppingList();
+                    // Persist checked state
+                    const [itemName, itemUnit] = name.includes('|') ? name.split('|') : [name, ''];
+                    let query = supabase.from('shopping_list').update({ is_checked: isChecked }).eq('name', itemName);
+                    if (itemUnit) {
+                        query = query.eq('unit', itemUnit);
+                    } else {
+                        query = query.or('unit.is.null,unit.eq.');
+                    }
+                    const { error } = await query;
+                    if (error) console.error("Error updating checked state:", error);
                 });
             });
         }
 
-        function handleAddManualItem(e) {
+        async function handleAddManualItem(e) {
             e.preventDefault();
             const input = e.target.querySelector('input[name="item_name"]');
             const name = input.value.trim();
@@ -1452,12 +1562,17 @@
                 manualShoppingItems.push(name);
                 input.value = '';
                 renderShoppingList();
+                const { error } = await supabase.from('shopping_list').insert({ name, is_manual: true });
+                if (error) console.error("Error saving manual item:", error);
             }
         }
 
-        function removeManualItem(name) {
+        async function removeManualItem(name) {
             manualShoppingItems = manualShoppingItems.filter(i => i !== name);
+            checkedItems.delete(name);
             renderShoppingList();
+            const { error } = await supabase.from('shopping_list').delete().eq('name', name).eq('is_manual', true);
+            if (error) console.error("Error removing manual item:", error);
         }
 
         async function handleClearMealPlan() {
@@ -1470,6 +1585,11 @@
             } else {
                 await fetchMealPlan();
                 renderMealPlan();
+                // Clear generated shopping list items
+                lastGeneratedShoppingMap.clear();
+                checkedItems.clear();
+                renderShoppingList();
+                await supabase.from('shopping_list').delete().eq('is_manual', false);
             }
         }
 
