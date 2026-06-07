@@ -73,6 +73,22 @@ create policy "Allow authenticated users" on recipe_ingredients for all using (a
 create policy "Allow authenticated users" on meal_plan for all using (auth.role() = 'authenticated');
 ```
 
+### 2b. Newer features (folders, nutrition, shopping-list ordering)
+
+If you already set up the tables above, run **`supabase_migration.sql`** (in this repo) in the SQL Editor to add what the newer features need:
+
+* `folders` and `recipe_folders` tables (organise recipes into folders — a recipe can be in several),
+* nutrition columns on `recipes` (`calories`, `protein`, `carbs`, `fat`),
+* a `position` column on `shopping_list` (manual reordering).
+
+**Auto nutrition** additionally uses a Supabase Edge Function in `supabase/functions/nutrition`:
+
+1. Get a free `app_id` + `app_key` from the [Edamam Nutrition Analysis API](https://developer.edamam.com).
+2. `supabase functions deploy nutrition`
+3. `supabase secrets set EDAMAM_APP_ID=xxxx EDAMAM_APP_KEY=yyyy`
+
+Manual macro entry works without this; only the **Calculate ✨** button needs it.
+
 ### 3. Configure Authentication
 
 To ensure email verification redirects you back to your app:

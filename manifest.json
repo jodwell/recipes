@@ -2,7 +2,9 @@
   "name": "My Recipe Book",
   "short_name": "Recipes",
   "description": "A simple recipe book and meal planner.",
+  "id": "/recipes/",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#3F4B3B",
   "theme_color": "#3F4B3B",
@@ -10,12 +12,14 @@
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

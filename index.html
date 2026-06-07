@@ -57,7 +57,7 @@
 
         <!-- NAVIGATION -->
         <nav class="flex justify-center mb-8 bg-granite border border-sand p-2 rounded-lg border border-sand">
-            <button id="nav-recipes" class="nav-btn bg-sand text-frostedmint px-6 py-2 rounded-md font-semibold font-serif">All Recipes</button>
+            <button id="nav-recipes" class="nav-btn bg-sand text-frostedmint px-6 py-2 rounded-md font-semibold font-serif">Recipes</button>
             <button id="nav-planner" class="nav-btn text-frostedmint hover:text-drysage px-6 py-2 rounded-md font-semibold font-serif">Meal Planner</button>
             <button id="nav-shopping" class="nav-btn text-frostedmint hover:text-drysage px-6 py-2 rounded-md font-semibold font-serif">Shopping List</button>
         </nav>
@@ -66,12 +66,19 @@
         <div id="page-recipes" class="page max-w-3xl mx-auto">
             <main class="bg-granite border border-sand p-6 sm:p-8 rounded-2xl border border-sand">
                 <div class="flex justify-between items-center mb-4">
-                     <h2 class="text-4xl text-frostedmint font-pacifico font-normal">All Recipes</h2>
+                     <h2 class="text-4xl text-frostedmint font-pacifico font-normal">Recipes</h2>
                      <button id="open-add-modal-btn" class="inline-flex items-center gap-2 justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                          Add New Recipe
                      </button>
                 </div>
+                <!-- Search -->
+                <div class="relative mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-granite/70 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                    <input type="search" id="recipe-search" placeholder="Search recipes or ingredients..." class="block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand pl-10 pr-3 py-2 text-sm">
+                </div>
+                <!-- Folder filter chips -->
+                <div id="folder-chips" class="flex flex-wrap gap-2 mb-4"></div>
                 <!-- Loading indicator for recipes -->
                 <div id="recipes-loading" class="flex items-center justify-center p-8">
                     <div class="flex items-center gap-3 text-drysage">
@@ -182,6 +189,32 @@
                 </div>
             </div>
 
+            <hr class="my-6 border-sand">
+
+            <div class="nutrition-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-frostedmint font-serif">Nutrition <span class="text-sm text-sand font-sans font-normal">(whole recipe)</span></h3>
+                    <button type="button" id="add-calc-nutrition-btn" class="inline-flex items-center justify-center rounded-md border border-sand bg-drysage px-4 py-2 text-sm font-medium text-granite shadow-sm hover:bg-sand hover:text-frostedmint whitespace-nowrap">Calculate ✨</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div><label for="add-calories" class="block text-sm font-medium text-drysage">Calories</label><input type="number" step="any" id="add-calories" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                    <div><label for="add-protein" class="block text-sm font-medium text-drysage">Protein (g)</label><input type="number" step="any" id="add-protein" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                    <div><label for="add-carbs" class="block text-sm font-medium text-drysage">Carbs (g)</label><input type="number" step="any" id="add-carbs" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                    <div><label for="add-fat" class="block text-sm font-medium text-drysage">Fat (g)</label><input type="number" step="any" id="add-fat" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                </div>
+            </div>
+
+            <hr class="my-6 border-sand">
+
+            <div class="folders-section">
+                <h3 class="text-xl font-semibold text-frostedmint mb-4 font-serif">Folders</h3>
+                <div id="add-folders-list" class="flex flex-wrap gap-2 mb-3"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="add-new-folder-name" placeholder="New folder name" class="flex-1 rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-sm shadow-sm focus:border-sand focus:ring-sand">
+                    <button type="button" id="add-create-folder-btn" class="inline-flex justify-center rounded-md border border-sand bg-drysage py-2 px-4 text-sm font-medium text-granite shadow-sm hover:bg-sand hover:text-frostedmint">Create</button>
+                </div>
+            </div>
+
             <div class="sm:col-span-2 flex justify-end gap-4 mt-8">
                 <button type="button" id="cancel-add" class="rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button>
                 <button type="submit" form="add-recipe-form" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Add Recipe</button>
@@ -224,6 +257,28 @@
                 <div class="sm:col-span-4 text-right"><button type="button" id="add-ingredient-btn" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Add Ingredient</button></div>
             </div>
             </div>
+            <hr class="my-6 border-sand">
+            <div class="nutrition-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-frostedmint font-serif">Nutrition <span class="text-sm text-sand font-sans font-normal">(whole recipe)</span></h3>
+                    <button type="button" id="edit-calc-nutrition-btn" class="inline-flex items-center justify-center rounded-md border border-sand bg-drysage px-4 py-2 text-sm font-medium text-granite shadow-sm hover:bg-sand hover:text-frostedmint whitespace-nowrap">Calculate ✨</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div><label for="edit-calories" class="block text-sm font-medium text-drysage">Calories</label><input type="number" step="any" id="edit-calories" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                    <div><label for="edit-protein" class="block text-sm font-medium text-drysage">Protein (g)</label><input type="number" step="any" id="edit-protein" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                    <div><label for="edit-carbs" class="block text-sm font-medium text-drysage">Carbs (g)</label><input type="number" step="any" id="edit-carbs" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                    <div><label for="edit-fat" class="block text-sm font-medium text-drysage">Fat (g)</label><input type="number" step="any" id="edit-fat" class="mt-1 block w-full rounded-md bg-drysage text-granite placeholder-granite/70 border-sand shadow-sm focus:border-sand focus:ring-sand"></div>
+                </div>
+            </div>
+            <hr class="my-6 border-sand">
+            <div class="folders-section">
+                <h3 class="text-xl font-semibold text-frostedmint mb-4 font-serif">Folders</h3>
+                <div id="edit-folders-list" class="flex flex-wrap gap-2 mb-3"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="edit-new-folder-name" placeholder="New folder name" class="flex-1 rounded-md bg-drysage text-granite placeholder-granite/70 border-sand text-sm shadow-sm focus:border-sand focus:ring-sand">
+                    <button type="button" id="edit-create-folder-btn" class="inline-flex justify-center rounded-md border border-sand bg-drysage py-2 px-4 text-sm font-medium text-granite shadow-sm hover:bg-sand hover:text-frostedmint">Create</button>
+                </div>
+            </div>
             <div class="mt-8 flex justify-end gap-4"><button type="button" id="cancel-edit" class="rounded-md border border-sand bg-drysage text-granite py-2 px-4 text-sm font-medium shadow-sm hover:bg-sand hover:text-frostedmint">Cancel</button><button type="submit" form="edit-recipe-form" class="inline-flex justify-center rounded-md border border-transparent bg-sand py-2 px-4 text-sm font-medium text-frostedmint shadow-sm hover:opacity-90">Save Changes</button></div>
         </div>
     </div>
@@ -248,7 +303,19 @@
                     <div class="flex items-center gap-1"><span class="text-sand">Total:</span> <span id="view-total-time"></span></div>
                     <div class="flex items-center gap-1 ml-auto"><span class="text-sand">Servings:</span> <span id="view-servings"></span></div>
                 </div>
-                
+
+                <div id="view-nutrition" class="hidden mb-6 border-b border-sand pb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm text-sand font-medium">Nutrition <span id="view-nutrition-scope" class="text-drysage"></span></h3>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="bg-deepmoss border border-sand/40 rounded-lg py-2"><div id="view-calories" class="text-lg font-semibold text-frostedmint"></div><div class="text-[10px] uppercase tracking-wide text-drysage">kcal</div></div>
+                        <div class="bg-deepmoss border border-sand/40 rounded-lg py-2"><div id="view-protein" class="text-lg font-semibold text-frostedmint"></div><div class="text-[10px] uppercase tracking-wide text-drysage">protein</div></div>
+                        <div class="bg-deepmoss border border-sand/40 rounded-lg py-2"><div id="view-carbs" class="text-lg font-semibold text-frostedmint"></div><div class="text-[10px] uppercase tracking-wide text-drysage">carbs</div></div>
+                        <div class="bg-deepmoss border border-sand/40 rounded-lg py-2"><div id="view-fat" class="text-lg font-semibold text-frostedmint"></div><div class="text-[10px] uppercase tracking-wide text-drysage">fat</div></div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="md:col-span-1">
                         <h3 class="text-xl font-serif text-sand mb-3">Ingredients</h3>
@@ -350,6 +417,14 @@
         let manualShoppingItems = [];
         let checkedItems = new Set();
         let newIngredientsBuffer = [];
+        let shoppingPositions = new Map();       // shopping item key -> position number
+        let foldersCache = [];                   // [{id, name}]
+        let recipeFoldersMap = new Map();        // recipeId -> Set(folderId)
+        let recipeIngredientsMap = new Map();    // recipeId -> [ingredient names, lowercased]
+        let currentFolderFilter = null;          // folderId, or null = show all
+        let currentSearchQuery = '';
+        let addSelectedFolders = new Set();      // folderIds selected in the Add modal
+        let editSelectedFolders = new Set();     // folderIds selected in the Edit modal
 
         async function fetchShoppingList() {
             const { data, error } = await supabase
@@ -362,19 +437,62 @@
             lastGeneratedShoppingMap.clear();
             manualShoppingItems = [];
             checkedItems.clear();
+            shoppingPositions.clear();
             if (data) {
                 data.forEach(row => {
+                    const key = row.is_manual
+                        ? row.name
+                        : (row.unit ? `${row.name}|${row.unit}` : row.name);
                     if (row.is_manual) {
                         manualShoppingItems.push(row.name);
                         if (row.is_checked) checkedItems.add(row.name);
                     } else {
-                        const key = row.unit ? `${row.name}|${row.unit}` : row.name;
                         const existing = lastGeneratedShoppingMap.get(key) || 0;
                         lastGeneratedShoppingMap.set(key, existing + Number(row.quantity));
                         if (row.is_checked) checkedItems.add(key);
                     }
+                    if (row.position !== null && row.position !== undefined) {
+                        shoppingPositions.set(key, Number(row.position));
+                    }
                 });
             }
+        }
+
+        async function fetchFolders() {
+            const { data, error } = await supabase.from('folders').select('*').order('name');
+            if (error) {
+                if (error.code !== 'PGRST205') console.error("Error fetching folders:", error);
+                foldersCache = [];
+                return;
+            }
+            foldersCache = data || [];
+        }
+
+        async function fetchRecipeFolders() {
+            recipeFoldersMap = new Map();
+            const { data, error } = await supabase.from('recipe_folders').select('recipe_id, folder_id');
+            if (error) {
+                if (error.code !== 'PGRST205') console.error("Error fetching recipe folders:", error);
+                return;
+            }
+            (data || []).forEach(row => {
+                if (!recipeFoldersMap.has(row.recipe_id)) recipeFoldersMap.set(row.recipe_id, new Set());
+                recipeFoldersMap.get(row.recipe_id).add(row.folder_id);
+            });
+        }
+
+        async function fetchAllRecipeIngredients() {
+            recipeIngredientsMap = new Map();
+            const { data, error } = await supabase
+                .from('recipe_ingredients')
+                .select('recipe_id, ingredients(name)');
+            if (error) { console.error("Error fetching all recipe ingredients:", error); return; }
+            (data || []).forEach(row => {
+                const name = row.ingredients?.name;
+                if (!name) return;
+                if (!recipeIngredientsMap.has(row.recipe_id)) recipeIngredientsMap.set(row.recipe_id, []);
+                recipeIngredientsMap.get(row.recipe_id).push(name.toLowerCase());
+            });
         }
 
         const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -443,7 +561,8 @@
 
                 console.log("Session found, fetching data...");
                 showLoadingStates();
-                await Promise.all([fetchRecipes(), fetchMealPlan(), fetchShoppingList()]);
+                await Promise.all([fetchRecipes(), fetchMealPlan(), fetchShoppingList(), fetchFolders(), fetchRecipeFolders(), fetchAllRecipeIngredients()]);
+                renderFolderChips();
                 renderRecipes();
                 renderMealPlan();
                 renderShoppingList();
@@ -741,13 +860,34 @@
         }
 
         // --- RENDERERS ---
+        function getFilteredRecipes() {
+            const q = currentSearchQuery.trim().toLowerCase();
+            return recipesCache.filter(recipe => {
+                if (currentFolderFilter !== null) {
+                    const set = recipeFoldersMap.get(recipe.id);
+                    if (!set || !set.has(currentFolderFilter)) return false;
+                }
+                if (q) {
+                    const nameMatch = (recipe.name || '').toLowerCase().includes(q);
+                    const ings = recipeIngredientsMap.get(recipe.id) || [];
+                    if (!nameMatch && !ings.some(n => n.includes(q))) return false;
+                }
+                return true;
+            });
+        }
+
         function renderRecipes() {
             recipesListContainer.innerHTML = '';
-            if (recipesCache.length === 0) { 
-                recipesListContainer.innerHTML = '<div class="flex items-center justify-center p-8 w-full"><p class="text-drysage">No recipes found. Click "Add New Recipe" to get started!</p></div>'; 
-                return; 
+            if (recipesCache.length === 0) {
+                recipesListContainer.innerHTML = '<div class="flex items-center justify-center p-8 w-full"><p class="text-drysage">No recipes found. Click "Add New Recipe" to get started!</p></div>';
+                return;
             }
-            recipesCache.forEach(recipe => {
+            const filtered = getFilteredRecipes();
+            if (filtered.length === 0) {
+                recipesListContainer.innerHTML = '<div class="flex items-center justify-center p-8 w-full"><p class="text-drysage">No recipes match your search or folder.</p></div>';
+                return;
+            }
+            filtered.forEach(recipe => {
                 const el = document.createElement('div');
                 el.className = 'flex-none w-72 bg-deepmoss border border-sand rounded-xl overflow-hidden shadow-lg flex flex-col snap-start transition-transform hover:scale-[1.01] cursor-pointer group';
                 
@@ -763,6 +903,8 @@
 
                 const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
                 const timeDisplay = totalTime > 0 ? `${totalTime} mins` : 'N/A';
+                const perServingCals = recipe.calories ? (recipe.servings ? Math.round(recipe.calories / recipe.servings) : Math.round(recipe.calories)) : null;
+                const calsDisplay = perServingCals ? `<div class="text-xs text-drysage mb-2">${perServingCals} kcal / serving</div>` : '';
 
                 el.innerHTML = `
                     ${imgDisplay}
@@ -770,10 +912,11 @@
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-semibold text-xl text-frostedmint font-serif leading-tight">${recipe.name}</h3>
                         </div>
-                        <div class="flex justify-between text-sm text-sand mb-4">
+                        <div class="flex justify-between text-sm text-sand mb-1">
                             <span>Servings: ${recipe.servings || 'N/A'}</span>
                             <span>Time: ${timeDisplay}</span>
                         </div>
+                        ${calsDisplay}
                         <div class="flex justify-end gap-3 mt-auto pt-3 border-t border-sand/30">
                             <button data-id="${recipe.id}" class="edit-btn text-drysage hover:text-sand p-1 z-10" title="Edit Recipe">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
@@ -865,6 +1008,11 @@
             document.getElementById('add-ing-name').value = '';
             document.getElementById('add-ing-qty').value = '';
             document.getElementById('add-ing-unit').value = '';
+
+            ['add-calories', 'add-protein', 'add-carbs', 'add-fat'].forEach(id => document.getElementById(id).value = '');
+            addSelectedFolders = new Set();
+            document.getElementById('add-new-folder-name').value = '';
+            renderFolderCheckboxes('add');
         }
         function closeAddModal() { document.getElementById('add-recipe-form').reset(); addModal.classList.add('hidden'); }
 
@@ -876,7 +1024,15 @@
             document.getElementById('edit-cook_time').value = recipe.cook_time;
             document.getElementById('edit-servings').value = recipe.servings;
             document.getElementById('edit-instructions').value = recipe.instructions;
-            
+
+            document.getElementById('edit-calories').value = recipe.calories ?? '';
+            document.getElementById('edit-protein').value = recipe.protein ?? '';
+            document.getElementById('edit-carbs').value = recipe.carbs ?? '';
+            document.getElementById('edit-fat').value = recipe.fat ?? '';
+            editSelectedFolders = new Set(recipeFoldersMap.get(recipe.id) || []);
+            document.getElementById('edit-new-folder-name').value = '';
+            renderFolderCheckboxes('edit');
+
             const hiddenInput = document.getElementById('edit-image-base64');
             const previewContainer = document.getElementById('edit-image-preview-container');
             const previewImg = document.getElementById('edit-image-preview');
@@ -927,6 +1083,21 @@
             document.getElementById('view-servings').textContent = recipe.servings || '-';
             document.getElementById('view-instructions').textContent = recipe.instructions || 'No instructions provided.';
 
+            // Nutrition (per serving when servings known, otherwise whole recipe)
+            const nutritionEl = document.getElementById('view-nutrition');
+            if (recipe.calories || recipe.protein || recipe.carbs || recipe.fat) {
+                const div = (recipe.servings && recipe.servings > 0) ? recipe.servings : 1;
+                const fmt = (v) => v ? Math.round(v / div) : 0;
+                document.getElementById('view-calories').textContent = fmt(recipe.calories);
+                document.getElementById('view-protein').textContent = fmt(recipe.protein) + 'g';
+                document.getElementById('view-carbs').textContent = fmt(recipe.carbs) + 'g';
+                document.getElementById('view-fat').textContent = fmt(recipe.fat) + 'g';
+                document.getElementById('view-nutrition-scope').textContent = (recipe.servings && recipe.servings > 0) ? '(per serving)' : '(whole recipe)';
+                nutritionEl.classList.remove('hidden');
+            } else {
+                nutritionEl.classList.add('hidden');
+            }
+
             const list = document.getElementById('view-ingredients-list');
             list.innerHTML = '<li class="text-drysage italic">Loading ingredients...</li>';
             
@@ -963,13 +1134,17 @@
             
             const imageBase64 = document.getElementById('add-image-base64').value || null;
 
-            const newRecipe = { 
-                name: formData.get('name'), 
-                instructions: formData.get('instructions'), 
-                prep_time: parseInt(formData.get('prep_time')) || null, 
-                cook_time: parseInt(formData.get('cook_time')) || null, 
+            const newRecipe = {
+                name: formData.get('name'),
+                instructions: formData.get('instructions'),
+                prep_time: parseInt(formData.get('prep_time')) || null,
+                cook_time: parseInt(formData.get('cook_time')) || null,
                 servings: parseInt(formData.get('servings')) || null,
-                image_url: imageBase64 
+                image_url: imageBase64,
+                calories: parseFloat(document.getElementById('add-calories').value) || null,
+                protein: parseFloat(document.getElementById('add-protein').value) || null,
+                carbs: parseFloat(document.getElementById('add-carbs').value) || null,
+                fat: parseFloat(document.getElementById('add-fat').value) || null
             };
             
             try {
@@ -999,8 +1174,11 @@
                     if (linkError) throw linkError;
                 }
 
+                await syncRecipeFolders(newRecipeId, addSelectedFolders);
+
                 closeAddModal();
-                await fetchRecipes();
+                await Promise.all([fetchRecipes(), fetchRecipeFolders(), fetchAllRecipeIngredients()]);
+                renderFolderChips();
                 renderRecipes();
 
             } catch (err) {
@@ -1021,19 +1199,25 @@
 
             const imageBase64 = document.getElementById('edit-image-base64').value || null;
 
-            const updatedData = { 
-                name: formData.get('name'), 
-                instructions: formData.get('instructions'), 
-                prep_time: parseInt(formData.get('prep_time')) || null, 
-                cook_time: parseInt(formData.get('cook_time')) || null, 
+            const updatedData = {
+                name: formData.get('name'),
+                instructions: formData.get('instructions'),
+                prep_time: parseInt(formData.get('prep_time')) || null,
+                cook_time: parseInt(formData.get('cook_time')) || null,
                 servings: parseInt(formData.get('servings')) || null,
-                image_url: imageBase64
+                image_url: imageBase64,
+                calories: parseFloat(document.getElementById('edit-calories').value) || null,
+                protein: parseFloat(document.getElementById('edit-protein').value) || null,
+                carbs: parseFloat(document.getElementById('edit-carbs').value) || null,
+                fat: parseFloat(document.getElementById('edit-fat').value) || null
             };
 
             const { error } = await supabase.from('recipes').update(updatedData).eq('id', recipeId);
             if (error) { alert(`Error: ${error.message}`); } else {
+                await syncRecipeFolders(Number(recipeId), editSelectedFolders);
                 closeEditModal();
-                await fetchRecipes();
+                await Promise.all([fetchRecipes(), fetchRecipeFolders(), fetchAllRecipeIngredients()]);
+                renderFolderChips();
                 renderRecipes();
             }
         }
@@ -1088,8 +1272,221 @@
             renderNewIngredientsBuffer();
         }
 
+        // --- FOLDERS ---
+        function renderFolderChips() {
+            const bar = document.getElementById('folder-chips');
+            if (!bar) return;
+            bar.innerHTML = '';
+
+            const allChip = document.createElement('button');
+            allChip.type = 'button';
+            allChip.className = `px-3 py-1 rounded-full text-sm border transition-colors ${currentFolderFilter === null ? 'bg-sand text-frostedmint border-sand' : 'bg-deepmoss text-drysage border-sand/40 hover:border-sand'}`;
+            allChip.textContent = 'All';
+            allChip.onclick = () => { currentFolderFilter = null; renderFolderChips(); renderRecipes(); };
+            bar.appendChild(allChip);
+
+            foldersCache.forEach(folder => {
+                const active = currentFolderFilter === folder.id;
+                const chip = document.createElement('span');
+                chip.className = `inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full text-sm border transition-colors ${active ? 'bg-sand text-frostedmint border-sand' : 'bg-deepmoss text-drysage border-sand/40 hover:border-sand'}`;
+                const label = document.createElement('button');
+                label.type = 'button';
+                label.textContent = folder.name;
+                label.onclick = () => { currentFolderFilter = active ? null : folder.id; renderFolderChips(); renderRecipes(); };
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.title = 'Delete folder';
+                del.className = 'rounded-full hover:bg-black/20 w-5 h-5 flex items-center justify-center leading-none';
+                del.innerHTML = '&times;';
+                del.onclick = (e) => { e.stopPropagation(); deleteFolder(folder.id, folder.name); };
+                chip.appendChild(label);
+                chip.appendChild(del);
+                bar.appendChild(chip);
+            });
+
+            const newChip = document.createElement('button');
+            newChip.type = 'button';
+            newChip.className = 'px-3 py-1 rounded-full text-sm border border-dashed border-sand/60 text-drysage hover:text-frostedmint hover:border-sand transition-colors';
+            newChip.textContent = '+ New Folder';
+            newChip.onclick = async () => {
+                const name = prompt('New folder name:');
+                if (name && name.trim()) { await createFolder(name.trim()); renderFolderChips(); }
+            };
+            bar.appendChild(newChip);
+        }
+
+        function renderFolderCheckboxes(context) {
+            const list = document.getElementById(context === 'add' ? 'add-folders-list' : 'edit-folders-list');
+            const selected = context === 'add' ? addSelectedFolders : editSelectedFolders;
+            if (!list) return;
+            list.innerHTML = '';
+            if (foldersCache.length === 0) {
+                list.innerHTML = '<p class="text-sm text-sand">No folders yet. Create one below.</p>';
+                return;
+            }
+            foldersCache.forEach(folder => {
+                const isOn = selected.has(folder.id);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `px-3 py-1 rounded-full text-sm border transition-colors ${isOn ? 'bg-sand text-frostedmint border-sand' : 'bg-deepmoss text-drysage border-sand/40 hover:border-sand'}`;
+                btn.textContent = folder.name;
+                btn.onclick = () => {
+                    if (selected.has(folder.id)) selected.delete(folder.id); else selected.add(folder.id);
+                    renderFolderCheckboxes(context);
+                };
+                list.appendChild(btn);
+            });
+        }
+
+        async function createFolder(name) {
+            const { data, error } = await supabase.from('folders').insert({ name }).select().single();
+            if (error) { console.error("Error creating folder:", error); alert("Could not create folder: " + error.message); return null; }
+            await fetchFolders();
+            return data.id;
+        }
+
+        async function createFolderFromModal(context) {
+            const input = document.getElementById(context === 'add' ? 'add-new-folder-name' : 'edit-new-folder-name');
+            const name = input.value.trim();
+            if (!name) return;
+            const newId = await createFolder(name);
+            if (newId !== null) {
+                (context === 'add' ? addSelectedFolders : editSelectedFolders).add(newId);
+                input.value = '';
+                renderFolderCheckboxes(context);
+                renderFolderChips();
+            }
+        }
+
+        async function deleteFolder(folderId, folderName) {
+            if (!confirm(`Delete folder "${folderName}"? Your recipes stay — only the folder is removed.`)) return;
+            const { error } = await supabase.from('folders').delete().eq('id', folderId);
+            if (error) { console.error("Error deleting folder:", error); alert("Could not delete folder."); return; }
+            if (currentFolderFilter === folderId) currentFolderFilter = null;
+            addSelectedFolders.delete(folderId);
+            editSelectedFolders.delete(folderId);
+            await Promise.all([fetchFolders(), fetchRecipeFolders()]);
+            renderFolderChips();
+            renderRecipes();
+        }
+
+        async function syncRecipeFolders(recipeId, selectedSet) {
+            const current = recipeFoldersMap.get(recipeId) || new Set();
+            const toAdd = [...selectedSet].filter(id => !current.has(id));
+            const toRemove = [...current].filter(id => !selectedSet.has(id));
+            if (toAdd.length) {
+                const rows = toAdd.map(folder_id => ({ recipe_id: recipeId, folder_id }));
+                const { error } = await supabase.from('recipe_folders').insert(rows);
+                if (error) console.error("Error adding recipe folders:", error);
+            }
+            for (const folder_id of toRemove) {
+                const { error } = await supabase.from('recipe_folders').delete().eq('recipe_id', recipeId).eq('folder_id', folder_id);
+                if (error) console.error("Error removing recipe folder:", error);
+            }
+        }
+
+        // --- NUTRITION ---
+        function buildIngredientLine(name, quantity, unit) {
+            const qty = (quantity !== null && quantity !== undefined && quantity !== '') ? quantity : '';
+            const u = unit ? ` ${unit}` : '';
+            return `${qty}${u} ${name}`.trim();
+        }
+
+        async function handleCalculateNutrition(context) {
+            const prefix = context === 'add' ? 'add' : 'edit';
+            const btn = document.getElementById(`${prefix}-calc-nutrition-btn`);
+            const title = document.getElementById(`${prefix}-name`).value.trim() || 'Recipe';
+
+            let lines = [];
+            if (context === 'add') {
+                lines = newIngredientsBuffer.map(i => buildIngredientLine(i.name, i.quantity, i.unit));
+            } else {
+                const { data, error } = await supabase
+                    .from('recipe_ingredients')
+                    .select('quantity, unit, ingredients(name)')
+                    .eq('recipe_id', currentEditingRecipeId);
+                if (error) { alert("Could not load ingredients for analysis."); return; }
+                lines = (data || []).map(i => buildIngredientLine(i.ingredients.name, i.quantity, i.unit));
+            }
+
+            if (lines.length === 0) { alert("Add some ingredients first, then calculate nutrition."); return; }
+
+            const original = btn.textContent;
+            btn.textContent = 'Calculating...';
+            btn.disabled = true;
+            try {
+                const { data, error } = await supabase.functions.invoke('nutrition', { body: { title, ingredients: lines } });
+                if (error) throw error;
+                if (data && data.error) throw new Error(data.error);
+                if (data.calories != null) document.getElementById(`${prefix}-calories`).value = data.calories;
+                if (data.protein != null) document.getElementById(`${prefix}-protein`).value = data.protein;
+                if (data.carbs != null) document.getElementById(`${prefix}-carbs`).value = data.carbs;
+                if (data.fat != null) document.getElementById(`${prefix}-fat`).value = data.fat;
+            } catch (e) {
+                console.error("Nutrition calculation failed:", e);
+                alert("Could not calculate nutrition. " + (e.message || "Make sure the 'nutrition' Edge Function is deployed."));
+            } finally {
+                btn.textContent = original;
+                btn.disabled = false;
+            }
+        }
+
+        // --- SHOPPING LIST ORDERING ---
+        function getSortedShoppingItems() {
+            const items = [];
+            lastGeneratedShoppingMap.forEach((qty, key) => {
+                const [name, unit] = key.includes('|') ? key.split('|') : [key, ''];
+                const displayQty = Math.round(qty * 100) / 100;
+                const quantityUnit = unit ? `${displayQty} ${unit}` : (displayQty > 0 ? displayQty : '');
+                items.push({ key, name, unit, quantityUnit, isManual: false, isChecked: checkedItems.has(key), position: shoppingPositions.has(key) ? shoppingPositions.get(key) : Infinity });
+            });
+            manualShoppingItems.forEach(item => {
+                items.push({ key: item, name: item, unit: '', quantityUnit: '', isManual: true, isChecked: checkedItems.has(item), position: shoppingPositions.has(item) ? shoppingPositions.get(item) : Infinity });
+            });
+            items.sort((a, b) => (a.isChecked - b.isChecked) || (a.position - b.position) || a.name.localeCompare(b.name));
+            return items;
+        }
+
+        async function persistShoppingPosition(item, position) {
+            let query = supabase.from('shopping_list').update({ position });
+            if (item.isManual) {
+                query = query.eq('name', item.name).eq('is_manual', true);
+            } else {
+                query = query.eq('name', item.name).eq('is_manual', false);
+                if (item.unit) query = query.eq('unit', item.unit);
+                else query = query.or('unit.is.null,unit.eq.');
+            }
+            const { error } = await query;
+            if (error) console.error("Error saving position:", error);
+        }
+
+        async function moveShoppingItem(key, direction) {
+            const items = getSortedShoppingItems();
+            const idx = items.findIndex(i => i.key === key);
+            if (idx === -1) return;
+            const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+            if (swapIdx < 0 || swapIdx >= items.length) return;
+            if (items[swapIdx].isChecked !== items[idx].isChecked) return; // keep checked items grouped at the bottom
+
+            // Normalise to current order, then swap the two neighbours
+            items.forEach((it, i) => shoppingPositions.set(it.key, i));
+            shoppingPositions.set(items[idx].key, swapIdx);
+            shoppingPositions.set(items[swapIdx].key, idx);
+
+            renderShoppingList();
+            await Promise.all(items.map(it => persistShoppingPosition(it, shoppingPositions.get(it.key))));
+        }
+
         // --- LISTENERS ---
         document.getElementById('open-add-modal-btn').addEventListener('click', openAddModal);
+        document.getElementById('recipe-search').addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value;
+            renderRecipes();
+        });
+        document.getElementById('add-calc-nutrition-btn').addEventListener('click', () => handleCalculateNutrition('add'));
+        document.getElementById('edit-calc-nutrition-btn').addEventListener('click', () => handleCalculateNutrition('edit'));
+        document.getElementById('add-create-folder-btn').addEventListener('click', () => createFolderFromModal('add'));
+        document.getElementById('edit-create-folder-btn').addEventListener('click', () => createFolderFromModal('edit'));
         document.getElementById('add-recipe-form').addEventListener('submit', handleAddFormSubmit);
         document.getElementById('cancel-add').addEventListener('click', closeAddModal);
         
@@ -1453,13 +1850,16 @@
                 // Delete old generated rows
                 await supabase.from('shopping_list').delete().eq('is_manual', false);
 
-                // Build rows to insert
+                // Build rows to insert, assigning sequential positions
                 const rows = [];
+                let posCounter = 0;
                 lastGeneratedShoppingMap.forEach((qty, key) => {
                     const [name, unit] = key.includes('|') ? key.split('|') : [key, ''];
                     const isChecked = previouslyChecked.has(key);
                     if (isChecked) checkedItems.add(key);
-                    rows.push({ name, unit, quantity: qty, is_manual: false, is_checked: isChecked });
+                    const position = posCounter++;
+                    shoppingPositions.set(key, position);
+                    rows.push({ name, unit, quantity: qty, is_manual: false, is_checked: isChecked, position });
                 });
                 if (rows.length > 0) {
                     const { error: insertErr } = await supabase.from('shopping_list').insert(rows);
@@ -1487,42 +1887,42 @@
                  return;
             }
 
-            // Build all items into an array, then sort unchecked first
-            const allItems = [];
-
-            lastGeneratedShoppingMap.forEach((qty, key) => {
-                const [name, unit] = key.includes('|') ? key.split('|') : [key, ''];
-                const displayQty = Math.round(qty * 100) / 100;
-                const quantityUnit = unit ? `${displayQty} ${unit}` : (displayQty > 0 ? displayQty : '');
-                allItems.push({ key, name, quantityUnit, isManual: false, isChecked: checkedItems.has(key) });
-            });
-
-            manualShoppingItems.forEach(item => {
-                allItems.push({ key: item, name: item, quantityUnit: '', isManual: true, isChecked: checkedItems.has(item) });
-            });
-
-            allItems.sort((a, b) => a.isChecked - b.isChecked);
+            // Build all items into an array, sorted by (unchecked first, manual order, name)
+            const allItems = getSortedShoppingItems();
 
             const ul = document.createElement('ul');
             ul.className = "divide-y divide-sand";
 
-            allItems.forEach(({ key, name, quantityUnit, isManual, isChecked }) => {
+            allItems.forEach(({ key, name, quantityUnit, isManual, isChecked }, index) => {
                 const li = document.createElement('li');
                 li.className = "py-3 flex items-center gap-3 group";
                 const checkId = isManual ? `check-manual-${key.replace(/\s+/g, '-')}` : `check-${key.replace(/[\s|]+/g, '-')}`;
+                const isFirst = index === 0 || allItems[index - 1].isChecked !== isChecked;
+                const isLast = index === allItems.length - 1 || allItems[index + 1].isChecked !== isChecked;
                 li.innerHTML = `
                     <input type="checkbox" id="${checkId}" class="shopping-check w-5 h-5 rounded border-sand text-drysage focus:ring-sand bg-granite" ${isChecked ? 'checked' : ''} data-name="${key}">
                     <label for="${checkId}" class="flex-1 flex justify-between items-center cursor-pointer select-none ${isChecked ? 'line-through-gray' : ''}">
                         <span class="text-frostedmint group-hover:text-sand transition-colors ${isChecked ? '' : 'text-frostedmint'}">${name}</span>
                         ${quantityUnit ? `<span class="text-drysage font-mono">${quantityUnit}</span>` : ''}
                     </label>
-                    ${isManual ? `<button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm ml-2" data-item="${key}">Remove</button>` : ''}
+                    <div class="flex flex-col leading-none text-drysage">
+                        <button class="move-up-btn hover:text-frostedmint text-xs ${isFirst ? 'opacity-20 pointer-events-none' : ''}" data-key="${key}" title="Move up">▲</button>
+                        <button class="move-down-btn hover:text-frostedmint text-xs ${isLast ? 'opacity-20 pointer-events-none' : ''}" data-key="${key}" title="Move down">▼</button>
+                    </div>
+                    ${isManual ? `<button class="remove-manual-item-btn text-darkraspberry hover:text-red-400 text-sm ml-1" data-item="${key}">Remove</button>` : ''}
                 `;
                 ul.appendChild(li);
             });
 
             listContainer.appendChild(ul);
-            
+
+            ul.querySelectorAll('.move-up-btn').forEach(btn => {
+                btn.addEventListener('click', () => moveShoppingItem(btn.dataset.key, 'up'));
+            });
+            ul.querySelectorAll('.move-down-btn').forEach(btn => {
+                btn.addEventListener('click', () => moveShoppingItem(btn.dataset.key, 'down'));
+            });
+
             ul.querySelectorAll('.remove-manual-item-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     removeManualItem(e.target.dataset.item);
@@ -1560,9 +1960,12 @@
             const name = input.value.trim();
             if (name) {
                 manualShoppingItems.push(name);
+                const positions = [...shoppingPositions.values()].filter(v => isFinite(v));
+                const position = positions.length ? Math.max(...positions) + 1 : 0;
+                shoppingPositions.set(name, position);
                 input.value = '';
                 renderShoppingList();
-                const { error } = await supabase.from('shopping_list').insert({ name, is_manual: true });
+                const { error } = await supabase.from('shopping_list').insert({ name, is_manual: true, position });
                 if (error) console.error("Error saving manual item:", error);
             }
         }
@@ -1570,6 +1973,7 @@
         async function removeManualItem(name) {
             manualShoppingItems = manualShoppingItems.filter(i => i !== name);
             checkedItems.delete(name);
+            shoppingPositions.delete(name);
             renderShoppingList();
             const { error } = await supabase.from('shopping_list').delete().eq('name', name).eq('is_manual', true);
             if (error) console.error("Error removing manual item:", error);
