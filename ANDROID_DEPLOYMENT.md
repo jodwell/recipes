@@ -6,10 +6,11 @@ Plan for turning **My Recipe Book** (a hosted PWA) into a real installable Andro
 
 ## Context / current state
 
-- App is a single self-contained `index.html` (vanilla JS + Tailwind CDN) talking to Supabase.
+- App is `index.html` (vanilla JS, Tailwind compiled to `styles.css`) + `localdb.js`. **Data is stored on-device in IndexedDB** (no Supabase any more), so it works fully offline.
 - Already a valid PWA: `manifest.json`, service worker (`sw.js`), and 192/512 icons.
 - Hosted on GitHub Pages at **https://jodwell.github.io/recipes/** (repo `jodwell/recipes`).
-- Supabase URL + anon key are entered via the in-app Settings UI (stored client-side) — **no secrets baked into the build**.
+- No backend or secrets. An optional USDA API key (for nutrition lookups of unusual ingredients) is entered in Settings and stored on the device.
+- Each device has its own copy of the data; move data between devices with Settings → Download backup / Restore from file.
 
 ## Chosen approach
 
@@ -60,26 +61,22 @@ Until live, the app works but shows a URL bar. Once verified → fully fullscree
 
 ## Pre-deployment TODO (app improvements / features)
 
-### Built (code complete — needs Supabase setup + testing)
+### Built
 
-- [x] **Shopping list reorder** — up/down arrows on each item, order saved to `shopping_list.position`.
-- [x] **Auto nutrition** — "Calculate ✨" button in add/edit recipe; macros shown per-serving on cards + view modal. Uses a Supabase Edge Function (`supabase/functions/nutrition`) calling the Edamam Nutrition Analysis API.
-- [x] **Folders** — "All Recipes" renamed to "Recipes"; folder filter chips; multi-folder assignment per recipe (`folders` + `recipe_folders` tables).
+- [x] **Shopping list reorder** — up/down arrows on each item.
+- [x] **Auto nutrition** — "Calculate ✨" estimates on-device from a built-in USDA ingredient table (`nutrition.js`, `nutrition-data.js`), with an online USDA fallback.
+- [x] **Recipe list view** — toggle between card carousel (with fast-scroll bar) and compact list.
+- [x] **Shopping list** — amounts merged across units, group by aisle, share button.
+- [x] **Recipe view** — servings scaler; nutrition per serving in add/edit forms; bulk "Calculate nutrition for all recipes" tool.
+- [x] **Meal planner** — 🎲 Surprise me.
+- [x] **Photos** — resized on upload; "Shrink existing photos" tool.
+- [x] **Backup reminder** banner after 14 days.
+- [x] **Tech** — HTML escaping of user text, Tailwind built locally (no CDN), stale-while-revalidate service worker.
+- [x] **Folders** — folder filter chips; multi-folder assignment per recipe.
 - [x] **Search** — searches recipe names *and* ingredients.
-
-### Required Supabase setup before this works (do once)
-
-1. **Run the DB migration:** Supabase → SQL Editor → paste `supabase_migration.sql` → Run.
-   (Adds `shopping_list.position`, recipe nutrition columns, and the `folders` / `recipe_folders` tables.)
-   ⚠️ Until this is run, adding/editing recipes and the shopping list will error, because the new columns won't exist.
-2. **Deploy the nutrition Edge Function** (only needed for auto nutrition):
-   - Sign up free at https://developer.edamam.com and create a **Nutrition Analysis API** app to get an `app_id` + `app_key`.
-   - `supabase functions deploy nutrition`
-   - `supabase secrets set EDAMAM_APP_ID=xxxx EDAMAM_APP_KEY=yyyy`
-   - (Manual macro entry works even without this; only the "Calculate ✨" button needs it.)
-3. **Bump cache:** `sw.js` cache name bumped to `v11` so the PWA picks up the new code.
+- [x] **Local storage** — moved off Supabase to on-device IndexedDB (`localdb.js`), with JSON backup/restore and a one-time "Import from Supabase".
 
 ### Still to do
 
-- [ ] Run the steps above against the live Supabase project.
+- [ ] Import data from Supabase once (Settings → Import from Supabase), then Download backup.
 - [ ] Manual test of all four features in the browser, then on the phone.
